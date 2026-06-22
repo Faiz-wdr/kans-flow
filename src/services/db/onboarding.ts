@@ -1,0 +1,256 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { OnboardingRequest, OnboardingStatus } from '@/types';
+import type { MembershipInput } from '@/lib/validators';
+import { mapClientRow } from './clients';
+
+/**
+ * Submit onboarding membership application (Public form bypasses auth).
+ */
+export async function submitOnboardingRequest(
+  supabase: SupabaseClient,
+  input: MembershipInput
+) {
+  // 1. Retrieve first organization to bind to public request
+  const { data: orgs } = await supabase
+    .from('organizations')
+    .select('id')
+    .limit(1);
+  const organizationId = orgs && orgs.length > 0 ? orgs[0].id : null;
+
+  // 2. Serialize secondary metadata details into existing 'notes' text column as JSON
+  const serializedNotes = JSON.stringify({
+    emergencyContact: input.emergencyContact,
+    address: input.address,
+    idProofType: input.idProofType,
+    idProofUrl: input.idProofUrl,
+    purposeType: input.purposeType,
+    purposeDetails: input.purposeDetails,
+    userNotes: input.notes || '',
+  });
+
+  const { error } = await supabase
+    .from('onboarding_requests')
+    .insert([
+      {
+        organization_id: organizationId,
+        full_name: input.fullName,
+        email: input.email,
+        phone: input.phone,
+        seat_preference: input.seatPreference,
+        start_date: input.startDate,
+        notes: serializedNotes,
+        status: 'pending',
+      },
+    ]);
+
+  if (error) {
+    console.error('Error inserting onboarding request:', error);
+    return { data: null, error };
+  }
+
+  // 3. Create notifications for admins and staff
+  if (organizationId) {
+    const notificationMessage = `New membership onboarding request submitted for ${input.fullName}.`;
+    await supabase.from('notifications').insert([
+      {
+        organization_id: organizationId,
+        type: 'new_onboarding',
+        title: 'New Onboarding Request',
+        message: notificationMessage,
+        is_read: false,
+        target_role: 'admin',
+      },
+      {
+        organization_id: organizationId,
+        type: 'new_onboarding',
+        title: 'New Onboarding Request',
+        message: notificationMessage,
+        is_read: false,
+        target_role: 'staff',
+      },
+    ]);
+  }
+
+  return { data: null, error: null };
+}
+
+/**
+ * Fetch all onboarding requests, ordered by newest first.
+ */
+export async function getOnboardingRequests(supabase: SupabaseClient) {
+  const { data, error } = await supabase
+    .from('onboarding_requests')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching onboarding requests:', error);
+    return { data: null, error };
+  }
+
+  // Map postgres snake_case columns to camelCase typescript interfaces
+  const mapped = (data || []).map((row: any) => ({
+    id: row.id,
+    organizationId: row.organization_id,
+    fullName: row.full_name,
+    email: row.email,
+    phone: row.phone,
+    seatPreference: row.seat_preference,
+    startDate: row.start_date,
+    notes: row.notes,
+    status: row.status,
+    reviewedBy: row.reviewed_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+
+  return { data: mapped as OnboardingRequest[], error: null };
+}
+
+/**
+ * Reject an onboarding request.
+ */
+export async function rejectOnboardingRequest(
+  supabase: SupabaseClient,
+  requestId: string,
+  reviewerId?: string
+) {
+  const { error } = await supabase
+    .from('onboarding_requests')
+    .delete()
+    .eq('id', requestId);
+
+  if (error) console.error(`Error deleting onboarding request ${requestId}:`, error);
+  return { data: null, error };
+}
+
+/**
+ * Update onboarding request details (e.g. details edit by admin/staff).
+ */
+export async function updateOnboardingRequest(
+  supabase: SupabaseClient,
+  requestId: string,
+  updates: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    startDate?: string;
+    notes?: string;
+  }
+) {
+  const dbUpdates: any = {};
+  if (updates.fullName !== undefined) dbUpdates.full_name = updates.fullName;
+  if (updates.email !== undefined) dbUpdates.email = updates.email;
+  if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+  if (updates.startDate !== undefined) dbUpdates.start_date = updates.startDate;
+  if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+  dbUpdates.updated_at = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('onboarding_requests')
+    .update(dbUpdates)
+    .eq('id', requestId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error(`Error updating onboarding request ${requestId}:`, error);
+  }
+  return { data, error };
+}
+
+/**
+ * Approve an onboarding request, provisioning client profile and seat assignment.
+ */
+export async function approveOnboardingRequest(
+  supabase: SupabaseClient,
+  request: OnboardingRequest,
+  seatId: string,
+  reviewerId: string
+) {
+  // 1. Retrieve organization ID
+  let organizationId = request.organizationId;
+  if (!organizationId) {
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('id')
+      .limit(1)
+      .single();
+    organizationId = orgData?.id || null;
+  }
+
+  if (!organizationId) {
+    return { error: new Error('No active workspace organization found to bind client profile.') };
+  }
+
+  // 2. Create client profile
+  const { data: client, error: clientError } = await supabase
+    .from('clients')
+    .insert([
+      {
+        organization_id: organizationId,
+        full_name: request.fullName,
+        email: request.email,
+        phone: request.phone,
+        status: 'active',
+        onboarded_at: new Date().toISOString(),
+      },
+    ])
+    .select()
+    .single();
+
+  if (clientError) {
+    console.error('Error creating client profile during onboarding approval:', clientError);
+    return { error: clientError };
+  }
+
+  // 3. Create seat assignment
+  const { error: assignmentError } = await supabase
+    .from('seat_assignments')
+    .insert([
+      {
+        organization_id: organizationId,
+        client_id: client.id,
+        seat_id: seatId,
+        start_date: request.startDate, // Use the target joining date (could be edited by admin/staff)
+        is_active: true,
+      },
+    ]);
+
+  if (assignmentError) {
+    console.error('Error establishing seat lease assignment:', assignmentError);
+    return { error: assignmentError };
+  }
+
+  // 4. Set seat status to occupied
+  const { error: seatError } = await supabase
+    .from('seats')
+    .update({ status: 'occupied' })
+    .eq('id', seatId);
+
+  if (seatError) {
+    console.error('Error updating seat occupied state:', seatError);
+    return { error: seatError };
+  }
+
+  // 5. Update onboarding request status to approved, store the finalized joining date and any edited details
+  const { error: requestUpdateError } = await supabase
+    .from('onboarding_requests')
+    .update({
+      status: 'approved',
+      full_name: request.fullName,
+      email: request.email,
+      phone: request.phone,
+      notes: typeof request.notes === 'string' ? request.notes : JSON.stringify(request.notes),
+      start_date: request.startDate,
+      reviewed_by: reviewerId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', request.id);
+
+  if (requestUpdateError) {
+    console.error('Error finalizing onboarding request status update:', requestUpdateError);
+  }
+
+  return { data: client ? mapClientRow(client) : null, error: null };
+}

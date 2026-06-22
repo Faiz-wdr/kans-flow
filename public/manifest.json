@@ -1,0 +1,43 @@
+{
+  "name": "KANs Flow",
+  "short_name": "KANs Flow",
+  "description": "Workspace operations platform for KANs HUB",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Membership Application",
+      "url": "/membership",
+      "description": "Apply for space membership"
+    },
+    {
+      "name": "Submit Support Ticket",
+      "url": "/support",
+      "description": "Submit a new support ticket"
+    }
+  ]
+}
