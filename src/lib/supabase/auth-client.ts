@@ -3,7 +3,8 @@ import type { StaffProfile } from '@/types';
 
 export const clientAuth = {
   async signIn(email: string, password: string) {
-    if (process.env.NODE_ENV === 'development') {
+    const isMockEnabled = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_MOCK_LOGIN === 'true';
+    if (isMockEnabled) {
       if (email === 'admin@kansflow.com' || email === 'staff@kansflow.com') {
         const role = email.startsWith('admin') ? 'admin' : 'staff';
         document.cookie = `sb-mock-role=${role}; path=/; max-age=86400; SameSite=Lax`;
@@ -32,7 +33,8 @@ export const clientAuth = {
   },
 
   async signOut() {
-    if (process.env.NODE_ENV === 'development') {
+    const isMockEnabled = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_MOCK_LOGIN === 'true';
+    if (isMockEnabled) {
       document.cookie = 'sb-mock-role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     }
     const supabase = createBrowserSupabase();
@@ -41,7 +43,8 @@ export const clientAuth = {
   },
 
   async getCurrentUser() {
-    if (process.env.NODE_ENV === 'development' && typeof document !== 'undefined') {
+    const isMockEnabled = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_MOCK_LOGIN === 'true';
+    if (isMockEnabled && typeof document !== 'undefined') {
       const mockRole = document.cookie
         .split('; ')
         .find((row) => row.startsWith('sb-mock-role='))
@@ -63,7 +66,8 @@ export const clientAuth = {
   },
 
   async getUserProfile() {
-    if (process.env.NODE_ENV === 'development' && typeof document !== 'undefined') {
+    const isMockEnabled = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_MOCK_LOGIN === 'true';
+    if (isMockEnabled && typeof document !== 'undefined') {
       const mockRole = document.cookie
         .split('; ')
         .find((row) => row.startsWith('sb-mock-role='))

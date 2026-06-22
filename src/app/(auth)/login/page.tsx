@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -18,6 +18,16 @@ type LoginInput = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('error') === 'suspended') {
+        setErrorMsg('Your account has been suspended. Please contact management.');
+        clientAuth.signOut();
+      }
+    }
+  }, []);
   
   const {
     register,
@@ -94,7 +104,7 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      {process.env.NODE_ENV === 'development' && (
+      {(process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_MOCK_LOGIN === 'true') && (
         <div className="mt-6 border-t border-border pt-4 text-center">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-3">
             Dev Quick Sign-in Bypass

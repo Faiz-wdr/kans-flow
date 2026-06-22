@@ -21,8 +21,8 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Redirect authenticated users trying to access login page
-  if (isLoginRoute && user) {
+  // Redirect authenticated users trying to access login page (except when they have error/logout params)
+  if (isLoginRoute && user && !url.searchParams.has('error') && !url.searchParams.has('logout')) {
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);
   }

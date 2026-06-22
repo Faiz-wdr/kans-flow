@@ -117,7 +117,7 @@ export default function MembershipFormPage() {
       clearInterval(progressInterval);
 
       if (error) {
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_MOCK_LOGIN === 'true') {
           console.warn('Supabase storage upload failed, using local mock preview in development:', error);
           setUploadProgress(100);
 

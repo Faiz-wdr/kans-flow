@@ -10,7 +10,8 @@ export const serverAuth = {
    * Get the current user model from the server session context.
    */
   async getCurrentUser() {
-    if (process.env.NODE_ENV === 'development') {
+    const isMockEnabled = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_MOCK_LOGIN === 'true';
+    if (isMockEnabled) {
       const cookieStore = await cookies();
       const mockRole = cookieStore.get('sb-mock-role')?.value;
       if (mockRole === 'admin' || mockRole === 'staff') {
@@ -33,7 +34,8 @@ export const serverAuth = {
    * Get the current user profile from the database in the server context.
    */
   async getUserProfile() {
-    if (process.env.NODE_ENV === 'development') {
+    const isMockEnabled = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_MOCK_LOGIN === 'true';
+    if (isMockEnabled) {
       const cookieStore = await cookies();
       const mockRole = cookieStore.get('sb-mock-role')?.value;
       if (mockRole === 'admin' || mockRole === 'staff') {

@@ -30,7 +30,8 @@ export async function updateSession(request: NextRequest) {
 
   // Refresh token if expired
   const mockRole = request.cookies.get('sb-mock-role')?.value;
-  if (process.env.NODE_ENV === 'development' && (mockRole === 'admin' || mockRole === 'staff')) {
+  const isMockEnabled = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_MOCK_LOGIN === 'true';
+  if (isMockEnabled && (mockRole === 'admin' || mockRole === 'staff')) {
     const mockUser = {
       id: mockRole === 'admin' ? '00000000-0000-0000-0000-000000000001' : '00000000-0000-0000-0000-000000000002',
       app_metadata: { role: mockRole },
