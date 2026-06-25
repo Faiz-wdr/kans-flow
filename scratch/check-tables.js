@@ -77,6 +77,20 @@ async function check() {
   } else {
     console.log("organizations table exists. Data:", orgs);
   }
+
+  // Check fcm_tokens
+  const { data: tokens, error: tokenErr } = await supabase
+    .from('fcm_tokens')
+    .select('*');
+
+  if (tokenErr) {
+    console.error("Error reading fcm_tokens table:", tokenErr.message);
+  } else {
+    console.log("fcm_tokens table exists. Tokens count:", tokens.length);
+    tokens.forEach((t, i) => {
+      console.log(`  Token ${i+1}: user_id=${t.user_id}, token=${t.token.substring(0, 30)}...`);
+    });
+  }
 }
 
 check();

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { clientAuth } from '@/lib/supabase/auth-client';
-import { getFCMToken, isNotificationSupported } from '@/lib/firebase/messaging';
+import { getFCMToken, isNotificationSupported, requestNotificationPermission } from '@/lib/firebase/messaging';
 import {
   getNotifications,
   markAsRead,
@@ -132,13 +132,20 @@ export function NotificationDropdown() {
     };
   }, []);
 
-  // Auto-register device token on mount / profile load if permission granted
+  // Auto-register device token on mount / profile load if permission granted or request it if default
   useEffect(() => {
     async function autoRegisterToken() {
       if (profile?.id) {
         try {
           const supported = await isNotificationSupported();
-          if (supported && Notification.permission === 'granted') {
+          if (!supported) return;
+
+          let permission = Notification.permission;
+          if (permission === 'default') {
+            permission = await requestNotificationPermission();
+          }
+
+          if (permission === 'granted') {
             const token = await getFCMToken();
             if (token) {
               await saveFCMToken(supabase, profile.id, token);
