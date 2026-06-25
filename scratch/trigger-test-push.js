@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const { initializeApp, cert, getApps } = require('firebase-admin/app');
+const { getMessaging } = require('firebase-admin/messaging');
 
 // Manually parse .env.local to load environment variables
 function loadEnvLocal() {
@@ -28,6 +30,41 @@ function loadEnvLocal() {
 }
 
 loadEnvLocal();
+
+// Safely initialize Firebase Admin SDK for local testing
+const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+let isFirebaseAdminInitialized = false;
+if (projectId && clientEmail && privateKey) {
+  try {
+    if (getApps().length === 0) {
+      let formattedKey = privateKey.trim();
+      if (formattedKey.startsWith('nMII')) {
+        formattedKey = formattedKey.substring(1);
+      }
+      if (!formattedKey.includes('BEGIN PRIVATE KEY')) {
+        formattedKey = `-----BEGIN PRIVATE KEY-----\n${formattedKey}\n-----END PRIVATE KEY-----`;
+      }
+      formattedKey = formattedKey.replace(/\\n/g, '\n');
+
+      initializeApp({
+        credential: cert({
+          projectId,
+          clientEmail,
+          privateKey: formattedKey,
+        }),
+      });
+    }
+    isFirebaseAdminInitialized = true;
+    console.log("[Firebase Admin] Local SDK instance initialized successfully for direct delivery test.");
+  } catch (err) {
+    console.error("[Firebase Admin] Initialization failed:", err);
+  }
+} else {
+  console.warn("[Firebase Admin] Missing server-side credentials in .env.local (FIREBASE_CLIENT_EMAIL or FIREBASE_PRIVATE_KEY). Direct push test is disabled.");
+}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -72,7 +109,7 @@ async function testTrigger() {
   tokens.forEach((t, i) => {
     const name = t.staff_profiles ? t.staff_profiles.full_name : 'Unknown User';
     const role = t.staff_profiles ? t.staff_profiles.role : 'N/A';
-    console.log(`  ${i+1}. User: ${name} (${role}) | Token: ${t.token.substring(0, 15)}...`);
+    console.log(`  ${i+1}. User: ${name} (${role}) | Token: ${t.token.substring(0, 15)}... (${t.token === 'fcm-dummy-token-for-testing-purposes-12345' ? 'DUMMY' : 'REAL'})`);
   });
 
   const { data: orgs } = await supabase.from('organizations').select('id').limit(1);
@@ -82,7 +119,15 @@ async function testTrigger() {
     process.exit(1);
   }
 
-  const targetToken = tokens[0];
+  // Prefer the first REAL token rather than the dummy token for our target
+  let targetToken = tokens.find(t => t.token !== 'fcm-dummy-token-for-testing-purposes-12345');
+  if (!targetToken) {
+    console.log("\nOnly dummy token exists. Targeting dummy token.");
+    targetToken = tokens[0];
+  } else {
+    console.log(`\nSelected real browser token as target.`);
+  }
+  
   const targetUser = targetToken.staff_profiles ? targetToken.staff_profiles.full_name : 'Staff';
 
   console.log(`\nInserting a test notification targeting ${targetUser} (${targetToken.user_id})...`);
@@ -114,6 +159,39 @@ async function testTrigger() {
   console.log(`\nSuccess! Notification record created with ID: ${newNotif.id}`);
   console.log("If your Supabase Database Webhook is configured, it will trigger the /api/notifications/trigger API endpoint.");
   console.log("Alternatively, if you are running locally, this insert will be delivered to the client UI dropdown in realtime.");
+
+  // Direct push trigger using Admin SDK if credentials exist
+  const realTokens = tokens.filter(t => t.token !== 'fcm-dummy-token-for-testing-purposes-12345').map(t => t.token);
+  if (realTokens.length > 0 && isFirebaseAdminInitialized) {
+    console.log(`\n[Direct FCM Push] Dispatching direct push to ${realTokens.length} real device tokens...`);
+    const payload = {
+      tokens: realTokens,
+      notification: {
+        title: '🔔 Push Notification Test',
+        body: 'This is a live test of the KANs Flow centralized notification service.',
+      },
+      data: {
+        actionUrl: '/dashboard/announcements',
+        notificationId: newNotif.id,
+      },
+    };
+
+    try {
+      const response = await getMessaging().sendEachForMulticast(payload);
+      console.log(`[Direct FCM Push] Completed: success=${response.successCount}, failure=${response.failureCount}`);
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          console.error(`  - Token ${idx+1} error:`, resp.error.message);
+        } else {
+          console.log(`  - Token ${idx+1} successfully sent!`);
+        }
+      });
+    } catch (pushErr) {
+      console.error("[Direct FCM Push] Exception occurred:", pushErr.message);
+    }
+  } else if (realTokens.length === 0) {
+    console.log("\n[Direct FCM Push] Skipped: No real browser tokens found in the database.");
+  }
 }
 
 testTrigger();

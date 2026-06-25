@@ -17,11 +17,20 @@ export function getFirebaseAdminMessaging() {
 
   try {
     if (getApps().length === 0) {
+      let formattedKey = privateKey.trim();
+      if (formattedKey.startsWith('nMII')) {
+        formattedKey = formattedKey.substring(1);
+      }
+      if (!formattedKey.includes('BEGIN PRIVATE KEY')) {
+        formattedKey = `-----BEGIN PRIVATE KEY-----\n${formattedKey}\n-----END PRIVATE KEY-----`;
+      }
+      formattedKey = formattedKey.replace(/\\n/g, '\n');
+
       initializeApp({
         credential: cert({
           projectId,
           clientEmail,
-          privateKey: privateKey.replace(/\\n/g, '\n'),
+          privateKey: formattedKey,
         }),
       });
       console.log('[Firebase Admin] Initialized SDK instance successfully.');
