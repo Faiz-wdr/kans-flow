@@ -88,7 +88,16 @@ function SupportDashboardContent() {
         ]);
 
         setTickets(ticketsRes.data || []);
-        setStaffList(staffRes.data || []);
+        const mappedStaffList = (staffRes.data || []).map((s: any) => ({
+          id: s.id,
+          organizationId: s.organization_id,
+          fullName: s.full_name,
+          role: s.role,
+          isActive: s.is_active,
+          createdAt: s.created_at,
+          updatedAt: s.updated_at,
+        }));
+        setStaffList(mappedStaffList);
       }
     } catch (err) {
       console.error('Error loading support dashboard data:', err);

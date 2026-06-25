@@ -81,7 +81,11 @@ export function SidebarNavigation({ role = 'staff', onLinkClick, isCollapsed = f
   useEffect(() => {
     if (pathname.startsWith('/dashboard/support')) {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('lastViewedSupport', new Date().toISOString());
+        try {
+          localStorage.setItem('lastViewedSupport', new Date().toISOString());
+        } catch (e) {
+          console.warn('localStorage is not available to write:', e);
+        }
       }
       setOpenSupportCount(0);
     }
@@ -109,7 +113,14 @@ export function SidebarNavigation({ role = 'staff', onLinkClick, isCollapsed = f
     // Fetch initial count of open support requests
     const fetchSupportCount = async () => {
       try {
-        const lastViewed = typeof window !== 'undefined' ? localStorage.getItem('lastViewedSupport') : null;
+        let lastViewed: string | null = null;
+        if (typeof window !== 'undefined') {
+          try {
+            lastViewed = localStorage.getItem('lastViewedSupport');
+          } catch (e) {
+            console.warn('localStorage is not available:', e);
+          }
+        }
         let query = supabase
           .from('support_requests')
           .select('*', { count: 'exact', head: true })

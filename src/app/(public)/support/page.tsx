@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { supportRequestSchema, type SupportRequestInput } from '@/lib/validators';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
-import { createNotification } from '@/lib/notifications/notification-service';
+import { submitSupportTicketAction } from '../actions';
 import {
   Lightbulb,
   HelpCircle,
@@ -175,16 +175,27 @@ function SupportFormContent() {
     setMatchingMembers([]);
 
     try {
+      // Extract only digits from input
+      const cleanedInput = mobileNumber.replace(/\D/g, '');
+      const last10Digits = cleanedInput.slice(-10);
+
+      if (last10Digits.length < 10) {
+        setLookupError('Please enter a valid 10-digit mobile number.');
+        setLookupLoading(false);
+        return;
+      }
+
       const { data: clients, error: clientErr } = await supabase
         .from('clients')
         .select('id, full_name, email, phone, organization_id')
-        .eq('phone', mobileNumber)
+        .like('phone', `%${last10Digits}`)
         .eq('status', 'active');
 
       if (clientErr) throw clientErr;
 
       if (!clients || clients.length === 0) {
         setLookupError('No active membership found with this number.');
+        setLookupLoading(false);
         return;
       }
 
@@ -335,56 +346,18 @@ function SupportFormContent() {
         formData.imageUrl = finalImageUrl;
       }
 
-      let orgId = selectedMember?.organizationId;
-      if (!orgId) {
-        const { data: orgs } = await supabase.from('organizations').select('id').limit(1);
-        orgId = orgs && orgs.length > 0 ? orgs[0].id : null;
+      const res = await submitSupportTicketAction(
+        formData,
+        expectedVacateDate || null,
+        selectedMember?.id || null,
+        selectedMember?.organizationId || null
+      );
+
+      if (!res.success) {
+        throw new Error(res.error);
       }
 
-      const { data: ticket, error: ticketErr } = await supabase
-        .from('support_requests')
-        .insert([
-          {
-            organization_id: orgId,
-            client_id: selectedMember?.id || null,
-            seat_number: formData.seatNumber,
-            name: formData.name,
-            email: formData.email,
-            category: formData.category,
-            subject: selectedCategory === 'vacate' ? 'Vacate Notice' : `${formData.category.toUpperCase()} Request`,
-            description: formData.description,
-            image_url: finalImageUrl || null,
-            status: 'open',
-            priority: formData.priority,
-            expected_vacate_date: expectedVacateDate || null,
-          }
-        ])
-        .select()
-        .single();
-
-      if (ticketErr) throw ticketErr;
-
-      setTicketNumber(ticket.ticket_number || '#0000');
-
-      if (orgId) {
-        const categoryObj = CATEGORIES.find((c) => c.id === selectedCategory);
-        const categoryTitle = categoryObj ? categoryObj.title : 'General';
-
-        const notificationMsg = selectedCategory === 'vacate'
-          ? `New Vacate Notice submitted by **${formData.name}** (**${formData.seatNumber}**).`
-          : `New support request [**${categoryTitle}**] (${ticket.ticket_number}) received from **${formData.name}** (**${formData.seatNumber}**).`;
-
-        await createNotification(supabase, {
-          organizationId: orgId,
-          type: selectedCategory === 'vacate' ? 'seat_vacating' : 'support_submitted',
-          recipient: { type: 'admin_staff' },
-          title: selectedCategory === 'vacate' ? 'New Vacate Notice' : 'New Support Request',
-          body: notificationMsg,
-          referenceModule: 'support',
-          referenceId: ticket.id,
-          priority: selectedCategory === 'vacate' ? 'high' : 'medium',
-        });
-      }
+      setTicketNumber(res.ticketNumber || '#0000');
 
       setStep('success');
       reset();

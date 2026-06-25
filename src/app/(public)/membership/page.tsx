@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { membershipSchema, type MembershipInput } from '@/lib/validators';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
-import { submitOnboardingRequest } from '@/services/db/onboarding';
+import { submitMembershipAction } from '../actions';
 import {
   Upload,
   Check,
@@ -159,9 +159,10 @@ export default function MembershipFormPage() {
   // 2. Handle Form Submission
   const onSubmit = async (data: MembershipInput) => {
     try {
-      const supabase = createClient();
-      const { error } = await submitOnboardingRequest(supabase, data);
-      if (error) throw error;
+      const res = await submitMembershipAction(data);
+      if (!res.success) {
+        throw new Error(res.error);
+      }
       setStep(3);
     } catch (err: any) {
       console.error('Form submission error:', err);

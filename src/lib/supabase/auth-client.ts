@@ -100,11 +100,19 @@ export const clientAuth = {
       .eq('id', user.id)
       .single();
 
-    if (error) {
+    if (error || !profile) {
       console.error('Error fetching user profile:', error);
       return null;
     }
 
-    return profile as StaffProfile;
+    return {
+      id: profile.id,
+      organizationId: profile.organization_id,
+      fullName: profile.full_name,
+      role: profile.role,
+      isActive: profile.is_active,
+      createdAt: profile.created_at,
+      updatedAt: profile.updated_at,
+    } as StaffProfile;
   },
 };

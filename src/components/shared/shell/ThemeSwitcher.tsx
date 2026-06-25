@@ -13,8 +13,12 @@ export function ThemeSwitcher({ role }: ThemeSwitcherProps) {
   const themeKey = role ? `theme-${role}` : 'theme-default';
 
   useEffect(() => {
-    // Access localstorage on mount in client
-    const savedTheme = localStorage.getItem(themeKey) as 'light' | 'dark' | null;
+    let savedTheme: 'light' | 'dark' | null = null;
+    try {
+      savedTheme = localStorage.getItem(themeKey) as 'light' | 'dark' | null;
+    } catch (e) {
+      console.warn('localStorage is not available:', e);
+    }
     const activeTheme = savedTheme || 'light'; // Default to light theme for clean operations
     
     setTheme(activeTheme);
@@ -28,7 +32,11 @@ export function ThemeSwitcher({ role }: ThemeSwitcherProps) {
   const toggleTheme = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(nextTheme);
-    localStorage.setItem(themeKey, nextTheme);
+    try {
+      localStorage.setItem(themeKey, nextTheme);
+    } catch (e) {
+      console.warn('localStorage is not available to write:', e);
+    }
     
     if (nextTheme === 'dark') {
       document.documentElement.classList.add('dark');
