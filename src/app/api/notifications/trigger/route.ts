@@ -7,7 +7,8 @@ import { sendPushNotificationBatch } from '@/lib/notifications/sender';
  * Falls back to the anon key if service role is not defined (e.g. in local development).
  */
 function getServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const url = rawUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
   
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
