@@ -7,9 +7,9 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-muted/20 font-sans text-foreground">
+    <div className="flex min-h-screen flex-col bg-background font-sans text-foreground">
       <header className="border-b border-border bg-background py-4">
-        <div className="mx-auto flex max-w-lg items-center justify-between px-4">
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-4">
           <Link href="/" className="text-lg font-semibold tracking-tight text-primary">
             KANs Flow
           </Link>
@@ -19,13 +19,13 @@ export default function PublicLayout({
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col justify-center py-6 px-4">
-        <div className="mx-auto w-full max-w-md rounded-xl border border-border bg-background p-6 shadow-sm sm:p-8">
+      <main className="flex-1 py-8 px-4">
+        <div className="mx-auto w-full max-w-2xl">
           {children}
         </div>
       </main>
 
-      <footer className="py-6 text-center text-xs text-muted-foreground">
+      <footer className="py-6 text-center text-xs text-muted-foreground border-t border-border mt-auto">
         <p>Powered by KANs Flow &amp; KANs HUB</p>
       </footer>
     </div>

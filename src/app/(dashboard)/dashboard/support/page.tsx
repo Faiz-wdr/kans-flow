@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { PageContainer } from '@/components/shared/shell/PageContainer';
 import { SectionHeader } from '@/components/shared/shell/SectionHeader';
 import { EmptyState } from '@/components/shared/shell/EmptyState';
 import { LoadingState } from '@/components/shared/shell/LoadingState';
 import { Button } from '@/components/ui/button';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { clientAuth } from '@/lib/supabase/auth-client';
 import { useDialog } from '@/providers/dialog-provider';
+import { createNotification } from '@/lib/notifications/notification-service';
 import { getSupportRequests, updateSupportRequest, createSupportNote, deleteSupportRequest, deleteSupportNote } from '@/services/db/support';
 import type { SupportRequest, SupportNote, StaffProfile } from '@/types';
 import {
@@ -29,10 +31,11 @@ import {
   Trash2,
 } from 'lucide-react';
 
-export default function SupportDashboardPage() {
+function SupportDashboardContent() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [profile, setProfile] = useState<StaffProfile | null>(null);
+  const searchParams = useSearchParams();
 
   // Data states
   const [tickets, setTickets] = useState<any[]>([]);
@@ -98,6 +101,17 @@ export default function SupportDashboardPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Support deep link query parameter routing
+  useEffect(() => {
+    const ticketId = searchParams.get('id');
+    if (ticketId && tickets.length > 0) {
+      const matchedTicket = tickets.find((t) => t.id === ticketId);
+      if (matchedTicket && (!selectedTicket || selectedTicket.id !== ticketId)) {
+        handleOpenTicket(matchedTicket);
+      }
+    }
+  }, [searchParams, tickets]);
 
   // Subscribe to realtime updates
   useEffect(() => {
@@ -172,6 +186,20 @@ export default function SupportDashboardPage() {
       
       // Post an internal note audit log
       await createSupportNote(supabase, selectedTicket.id, profile.id, `Ticket assigned to ${profile.fullName}.`);
+
+      // Create assignment notification
+      const notificationMsg = `Support Request **${selectedTicket.ticket_number || '#0000'}** assigned to **${profile.fullName}**.`;
+      await createNotification(supabase, {
+        organizationId: profile.organizationId,
+        type: 'support_assigned',
+        recipient: { type: 'admin_staff' },
+        title: 'Ticket Assigned',
+        body: notificationMsg,
+        referenceModule: 'support',
+        referenceId: selectedTicket.id,
+        priority: 'low',
+        actorId: profile.id,
+      });
 
       setSelectedTicket(data);
       loadData(true);
@@ -253,25 +281,18 @@ export default function SupportDashboardPage() {
       );
 
       // 2. Create completion notification for Admins/Staff
-      const notificationMsg = `Support Request ${selectedTicket.ticket_number || '#0000'} resolved by ${profile.fullName}.`;
-      await supabase.from('notifications').insert([
-        {
-          organization_id: profile.organizationId,
-          type: 'new_ticket',
-          title: 'Ticket Resolved',
-          message: notificationMsg,
-          is_read: false,
-          target_role: 'admin',
-        },
-        {
-          organization_id: profile.organizationId,
-          type: 'new_ticket',
-          title: 'Ticket Resolved',
-          message: notificationMsg,
-          is_read: false,
-          target_role: 'staff',
-        }
-      ]);
+      const notificationMsg = `Support Request **${selectedTicket.ticket_number || '#0000'}** resolved by **${profile.fullName}**.`;
+      await createNotification(supabase, {
+        organizationId: profile.organizationId,
+        type: 'support_resolved',
+        recipient: { type: 'admin_staff' },
+        title: 'Ticket Resolved',
+        body: notificationMsg,
+        referenceModule: 'support',
+        referenceId: selectedTicket.id,
+        priority: 'medium',
+        actorId: profile.id,
+      });
 
       setSelectedTicket(data);
       setShowResolutionForm(false);
@@ -1021,5 +1042,13 @@ export default function SupportDashboardPage() {
       })()}
 
     </PageContainer>
+  );
+}
+
+export default function SupportDashboardPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <SupportDashboardContent />
+    </Suspense>
   );
 }

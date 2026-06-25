@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { supportRequestSchema, type SupportRequestInput } from '@/lib/validators';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
+import { createNotification } from '@/lib/notifications/notification-service';
 import {
   Lightbulb,
   HelpCircle,
@@ -366,28 +367,23 @@ function SupportFormContent() {
       setTicketNumber(ticket.ticket_number || '#0000');
 
       if (orgId) {
-        const notificationMsg = selectedCategory === 'vacate'
-          ? `New Vacate Notice submitted by ${formData.name} (${formData.seatNumber}).`
-          : `New support ticket (${ticket.ticket_number}) received from ${formData.name} (${formData.seatNumber}).`;
+        const categoryObj = CATEGORIES.find((c) => c.id === selectedCategory);
+        const categoryTitle = categoryObj ? categoryObj.title : 'General';
 
-        await supabase.from('notifications').insert([
-          {
-            organization_id: orgId,
-            type: selectedCategory === 'vacate' ? 'vacate_notice' : 'new_ticket',
-            title: selectedCategory === 'vacate' ? 'New Vacate Notice' : 'New Support Request',
-            message: notificationMsg,
-            is_read: false,
-            target_role: 'admin',
-          },
-          {
-            organization_id: orgId,
-            type: selectedCategory === 'vacate' ? 'vacate_notice' : 'new_ticket',
-            title: selectedCategory === 'vacate' ? 'New Vacate Notice' : 'New Support Request',
-            message: notificationMsg,
-            is_read: false,
-            target_role: 'staff',
-          }
-        ]);
+        const notificationMsg = selectedCategory === 'vacate'
+          ? `New Vacate Notice submitted by **${formData.name}** (**${formData.seatNumber}**).`
+          : `New support request [**${categoryTitle}**] (${ticket.ticket_number}) received from **${formData.name}** (**${formData.seatNumber}**).`;
+
+        await createNotification(supabase, {
+          organizationId: orgId,
+          type: selectedCategory === 'vacate' ? 'seat_vacating' : 'support_submitted',
+          recipient: { type: 'admin_staff' },
+          title: selectedCategory === 'vacate' ? 'New Vacate Notice' : 'New Support Request',
+          body: notificationMsg,
+          referenceModule: 'support',
+          referenceId: ticket.id,
+          priority: selectedCategory === 'vacate' ? 'high' : 'medium',
+        });
       }
 
       setStep('success');
@@ -410,7 +406,7 @@ function SupportFormContent() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 py-6 font-sans min-h-[85vh] flex flex-col justify-center">
+    <div className="w-full max-w-md mx-auto px-4 py-6 font-sans flex flex-col justify-start">
       <div className="mb-6 flex items-center justify-between">
         {step !== 'category' && step !== 'success' && (
           <button

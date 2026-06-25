@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OnboardingRequest, OnboardingStatus } from '@/types';
 import type { MembershipInput } from '@/lib/validators';
 import { mapClientRow } from './clients';
+import { createNotification } from '@/lib/notifications/notification-service';
 
 /**
  * Submit onboarding membership application (Public form bypasses auth).
@@ -50,25 +51,19 @@ export async function submitOnboardingRequest(
 
   // 3. Create notifications for admins and staff
   if (organizationId) {
-    const notificationMessage = `New membership onboarding request submitted for ${input.fullName}.`;
-    await supabase.from('notifications').insert([
-      {
-        organization_id: organizationId,
-        type: 'new_onboarding',
-        title: 'New Onboarding Request',
-        message: notificationMessage,
-        is_read: false,
-        target_role: 'admin',
-      },
-      {
-        organization_id: organizationId,
-        type: 'new_onboarding',
-        title: 'New Onboarding Request',
-        message: notificationMessage,
-        is_read: false,
-        target_role: 'staff',
-      },
-    ]);
+    const seatPref = input.seatPreference
+      ? input.seatPreference.charAt(0).toUpperCase() + input.seatPreference.slice(1)
+      : 'Unspecified';
+    const notificationMessage = `New membership onboarding request submitted for **${input.fullName}** (Preference: **${seatPref}**).`;
+    await createNotification(supabase, {
+      organizationId,
+      type: 'membership_submitted',
+      recipient: { type: 'admin_staff' },
+      title: 'New Onboarding Request',
+      body: notificationMessage,
+      referenceModule: 'membership',
+      priority: 'medium',
+    });
   }
 
   return { data: null, error: null };
@@ -115,12 +110,32 @@ export async function rejectOnboardingRequest(
   requestId: string,
   reviewerId?: string
 ) {
+  // Create rejection notification
+  const { data: requestData } = await supabase
+    .from('onboarding_requests')
+    .select('full_name, organization_id')
+    .eq('id', requestId)
+    .single();
+
   const { error } = await supabase
     .from('onboarding_requests')
     .delete()
     .eq('id', requestId);
 
-  if (error) console.error(`Error deleting onboarding request ${requestId}:`, error);
+  if (error) {
+    console.error(`Error deleting onboarding request ${requestId}:`, error);
+  } else if (requestData?.organization_id) {
+    await createNotification(supabase, {
+      organizationId: requestData.organization_id,
+      type: 'membership_rejected',
+      recipient: { type: 'admin_staff' },
+      title: 'Onboarding Request Rejected',
+      body: `Membership onboarding request for **${requestData.full_name}** has been rejected.`,
+      referenceModule: 'membership',
+      priority: 'low',
+      actorId: reviewerId,
+    });
+  }
   return { data: null, error };
 }
 
@@ -250,6 +265,18 @@ export async function approveOnboardingRequest(
 
   if (requestUpdateError) {
     console.error('Error finalizing onboarding request status update:', requestUpdateError);
+  } else if (organizationId) {
+    // Create approval notification
+    await createNotification(supabase, {
+      organizationId,
+      type: 'membership_approved',
+      recipient: { type: 'admin_staff' },
+      title: 'Onboarding Request Approved',
+      body: `Membership onboarding request for **${request.fullName}** has been approved and assigned to seat/cabin.`,
+      referenceModule: 'membership',
+      priority: 'medium',
+      actorId: reviewerId,
+    });
   }
 
   return { data: client ? mapClientRow(client) : null, error: null };

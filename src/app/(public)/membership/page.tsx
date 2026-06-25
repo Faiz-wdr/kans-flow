@@ -24,9 +24,6 @@ import {
 export default function MembershipFormPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [hasReadToBottom, setHasReadToBottom] = useState(false);
-  const termsRef = useRef<HTMLDivElement>(null);
-
   // File upload state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -49,26 +46,6 @@ export default function MembershipFormPage() {
       seatPreference: 'coworking',
     },
   });
-
-  const handleScroll = () => {
-    if (!termsRef.current) return;
-    const target = termsRef.current;
-    // Check if scrolled within 20px of the bottom
-    const isAtBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 20;
-    if (isAtBottom) {
-      setHasReadToBottom(true);
-    }
-  };
-
-  useEffect(() => {
-    if (termsRef.current) {
-      const target = termsRef.current;
-      // If the content is smaller than container and doesn't require scroll, auto-enable
-      if (target.scrollHeight <= target.clientHeight) {
-        setHasReadToBottom(true);
-      }
-    }
-  }, []);
 
   const purposeType = watch('purposeType');
   const idProofUrl = watch('idProofUrl');
@@ -206,13 +183,9 @@ export default function MembershipFormPage() {
             </p>
           </div>
 
-          {/* Scrollable Terms Block */}
-          <div
-            ref={termsRef}
-            onScroll={handleScroll}
-            className="h-80 overflow-y-auto border border-border rounded-lg p-4 bg-muted/10 space-y-4 text-xs leading-relaxed text-muted-foreground"
-          >
-            <h3 className="font-bold text-foreground text-sm border-b border-border pb-1">Space Guidelines &amp; Policies</h3>
+          {/* Terms Block */}
+          <div className="space-y-6 text-sm leading-relaxed text-muted-foreground">
+            <h3 className="font-bold text-foreground text-base border-b border-border pb-1.5">Space Guidelines &amp; Policies</h3>
             <ol className="list-decimal pl-4 space-y-3">
               <li>
                 <strong className="text-foreground">Members Only:</strong> Only registered members are allowed inside. Guests must get permission from the Project Coordinator/Manager at reception.
@@ -287,43 +260,33 @@ export default function MembershipFormPage() {
                 <strong className="text-foreground">Support:</strong> For assistance, contact Shibin Shahsad (Project Manager) at 9946-903-908 or visit the Reception (2nd Floor).
               </li>
             </ol>
-          </div>
 
-          {!hasReadToBottom && (
-            <div className="text-center py-3 px-4 text-xs text-amber-600 bg-amber-500/5 border border-amber-500/10 rounded-lg animate-pulse font-medium">
-              Please scroll down to the bottom of the terms &amp; conditions to continue.
+            {/* Checkbox and button now at the bottom of the terms list */}
+            <div className="space-y-4 pt-6 border-t border-border mt-8">
+              {/* Declaration Checkbox */}
+              <div className="flex items-start gap-3 rounded-lg border border-border p-3.5 bg-muted/5">
+                <input
+                  id="terms-checkbox"
+                  type="checkbox"
+                  className="mt-0.5 h-4.5 w-4.5 rounded border-input text-primary focus:ring-primary bg-background cursor-pointer"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                />
+                <label htmlFor="terms-checkbox" className="text-xs leading-normal text-muted-foreground select-none cursor-pointer">
+                  I have read and understood the points listed above. I agree to abide by the rules of KANs HUB and understand that failure to comply may lead to termination of my membership.
+                </label>
+              </div>
+
+              <Button
+                type="button"
+                className="w-full"
+                disabled={!termsAccepted}
+                onClick={() => setStep(2)}
+              >
+                <span>Continue to Form</span>
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
             </div>
-          )}
-
-          <div
-            className={`space-y-4 transition-all duration-500 ease-in-out ${hasReadToBottom
-              ? 'opacity-100 max-h-[300px] pointer-events-auto'
-              : 'opacity-0 max-h-0 overflow-hidden pointer-events-none'
-              }`}
-          >
-            {/* Declaration Checkbox */}
-            <div className="flex items-start gap-3 rounded-lg border border-border p-3.5 bg-muted/5">
-              <input
-                id="terms-checkbox"
-                type="checkbox"
-                className="mt-0.5 h-4.5 w-4.5 rounded border-input text-primary focus:ring-primary bg-background cursor-pointer"
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
-              />
-              <label htmlFor="terms-checkbox" className="text-xs leading-normal text-muted-foreground select-none cursor-pointer">
-                I have read and understood the points listed above. I agree to abide by the rules of KANs HUB and understand that failure to comply may lead to termination of my membership.
-              </label>
-            </div>
-
-            <Button
-              type="button"
-              className="w-full"
-              disabled={!termsAccepted}
-              onClick={() => setStep(2)}
-            >
-              <span>Continue to Form</span>
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
           </div>
         </div>
       )}

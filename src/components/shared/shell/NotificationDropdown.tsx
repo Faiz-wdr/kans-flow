@@ -1,17 +1,43 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, MessageSquare, AlertCircle, UserPlus, Megaphone, LogOut, Check } from 'lucide-react';
+import { Bell, MessageSquare, AlertCircle, UserPlus, Megaphone, LogOut, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { clientAuth } from '@/lib/supabase/auth-client';
+import { getFCMToken, isNotificationSupported } from '@/lib/firebase/messaging';
+import {
+  getNotifications,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification,
+  saveFCMToken,
+} from '@/lib/notifications/notification-service';
 import type { Notification, StaffProfile } from '@/types';
+
+function renderStyledMessage(message: string) {
+  if (!message) return null;
+  const parts = message.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={index} className="font-bold text-foreground dark:text-white">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return part;
+  });
+}
 
 export function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [profile, setProfile] = useState<StaffProfile | null>(null);
+  const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
@@ -30,28 +56,16 @@ export function NotificationDropdown() {
       setProfile(userProfile);
 
       if (userProfile?.organizationId) {
-        // Fetch notifications (RLS filters automatically by org, role, and user)
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(10);
+        const { data, error } = await getNotifications(
+          supabase,
+          userProfile.organizationId,
+          userProfile.role,
+          userProfile.id,
+          10
+        );
 
         if (error) throw error;
-
-        const mapped: Notification[] = (data || []).map((row: any) => ({
-          id: row.id,
-          organizationId: row.organization_id,
-          type: row.type,
-          title: row.title,
-          message: row.message,
-          isRead: row.is_read,
-          targetRole: row.target_role,
-          targetUserId: row.target_user_id,
-          createdAt: row.created_at,
-        }));
-
-        setNotifications(mapped);
+        setNotifications((data || []) as any[]);
       }
     } catch (err) {
       console.error('Error loading notifications:', err);
@@ -95,7 +109,13 @@ export function NotificationDropdown() {
                 targetRole: newNotif.target_role,
                 targetUserId: newNotif.target_user_id,
                 createdAt: newNotif.created_at,
-              };
+                // Include metadata fields for deep links
+                actionUrl: newNotif.action_url || null,
+                referenceModule: newNotif.reference_module || null,
+                referenceId: newNotif.reference_id || null,
+                priority: newNotif.priority || 'medium',
+                richType: newNotif.rich_type || null,
+              } as any;
               setNotifications((prev) => [mappedNotif, ...prev]);
             }
           }
@@ -112,32 +132,55 @@ export function NotificationDropdown() {
     };
   }, []);
 
-  const handleMarkAsRead = async (id: string) => {
+  // Auto-register device token on mount / profile load if permission granted
+  useEffect(() => {
+    async function autoRegisterToken() {
+      if (profile?.id) {
+        try {
+          const supported = await isNotificationSupported();
+          if (supported && Notification.permission === 'granted') {
+            const token = await getFCMToken();
+            if (token) {
+              await saveFCMToken(supabase, profile.id, token);
+              console.log('[NotificationDropdown] FCM registration token updated.');
+            }
+          }
+        } catch (err) {
+          console.warn('[NotificationDropdown] Failed auto-registering FCM token:', err);
+        }
+      }
+    }
+    autoRegisterToken();
+  }, [profile]);
+
+  const handleNotificationClick = async (item: Notification) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', id);
+      if (!item.isRead) {
+        await markAsRead(supabase, item.id);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n))
+        );
+      }
 
-      if (error) throw error;
-
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      setSelectedNotificationId(
+        selectedNotificationId === item.id ? null : item.id
       );
+
+      // Deep link navigation
+      const actionUrl = (item as any).actionUrl || (item as any).action_url;
+      if (actionUrl) {
+        router.push(actionUrl);
+        setIsOpen(false);
+      }
     } catch (err) {
-      console.error('Error marking notification as read:', err);
+      console.error('Error handling notification click:', err);
     }
   };
 
   const handleMarkAllAsRead = async () => {
     if (!profile?.organizationId) return;
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('organization_id', profile.organizationId)
-        .eq('is_read', false);
-
+      const { error } = await markAllAsRead(supabase, profile.organizationId);
       if (error) throw error;
 
       setNotifications((prev) =>
@@ -145,6 +188,21 @@ export function NotificationDropdown() {
       );
     } catch (err) {
       console.error('Error marking all notifications as read:', err);
+    }
+  };
+
+  const handleDeleteNotification = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { error } = await deleteNotification(supabase, id);
+      if (error) throw error;
+
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      if (selectedNotificationId === id) {
+        setSelectedNotificationId(null);
+      }
+    } catch (err) {
+      console.error('Error deleting notification:', err);
     }
   };
 
@@ -210,7 +268,7 @@ export function NotificationDropdown() {
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 rounded-lg border border-border bg-background p-1.5 shadow-lg ring-1 ring-black/5 animate-fade-in z-50">
+        <div className="absolute right-0 mt-2 w-96 rounded-lg border border-border bg-background p-1.5 shadow-lg ring-1 ring-black/5 animate-fade-in z-50">
           <div className="px-3 py-2 border-b border-border flex justify-between items-center mb-1">
             <span className="text-xs font-semibold text-foreground font-sans">Notifications</span>
             <div className="flex items-center gap-2">
@@ -232,7 +290,7 @@ export function NotificationDropdown() {
             </div>
           </div>
 
-          <div className="divide-y divide-border max-h-64 overflow-y-auto">
+          <div className="divide-y divide-border max-h-[450px] overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="py-6 text-center text-xs text-muted-foreground font-sans">
                 No notifications yet.
@@ -241,9 +299,7 @@ export function NotificationDropdown() {
               notifications.map((item) => (
                 <div
                   key={item.id}
-                  onClick={() => {
-                    if (!item.isRead) handleMarkAsRead(item.id);
-                  }}
+                  onClick={() => handleNotificationClick(item)}
                   className={`p-2.5 hover:bg-muted/50 transition-colors flex gap-3 text-left rounded-md cursor-pointer relative ${
                     !item.isRead ? 'bg-primary/5' : ''
                   }`}
@@ -251,12 +307,26 @@ export function NotificationDropdown() {
                   <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${getNotificationColor(item.type)}`}>
                     {getNotificationIcon(item.type)}
                   </div>
-                  <div className="space-y-0.5 min-w-0 flex-1">
+                  <div className="space-y-1 min-w-0 flex-1">
                     <p className="text-xs font-semibold text-foreground truncate">{item.title}</p>
-                    <p className="text-[11px] text-muted-foreground line-clamp-2 leading-tight">
-                      {item.message}
+                    <p className={`text-[11px] text-muted-foreground leading-tight transition-all ${
+                      selectedNotificationId === item.id ? '' : 'line-clamp-2'
+                    }`}>
+                      {renderStyledMessage(item.message)}
                     </p>
-                    <span className="text-[9px] text-muted-foreground/80 font-mono block">{formatTimeAgo(item.createdAt)}</span>
+                    {selectedNotificationId === item.id && (
+                      <div className="pt-2 flex justify-end">
+                        <button
+                          onClick={(e) => handleDeleteNotification(item.id, e)}
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-500 hover:text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 px-2 py-1 rounded transition-colors cursor-pointer"
+                          title="Delete this notification"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    )}
+                    <span className="text-[9px] text-muted-foreground/80 font-mono block pt-0.5">{formatTimeAgo(item.createdAt)}</span>
                   </div>
                   {!item.isRead && (
                     <span className="absolute top-3.5 right-3 h-1.5 w-1.5 rounded-full bg-primary" />

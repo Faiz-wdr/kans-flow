@@ -6,6 +6,7 @@ import { SidebarNavigation } from './SidebarNavigation';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import type { StaffProfile } from '@/types';
 import { X } from 'lucide-react';
+import { QuickLinks } from './QuickLinks';
 
 interface MobileSidebarDrawerProps {
   isOpen: boolean;
@@ -68,18 +69,22 @@ export function MobileSidebarDrawer({ isOpen, onClose, profile }: MobileSidebarD
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border bg-muted/10 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground font-sans">Appearance</span>
-            <ThemeSwitcher role={profile?.role} />
-          </div>
-          <div className="flex items-center gap-2.5 border-t border-border pt-3 mt-1">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold font-serif text-sm border border-primary/20">
-              {profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : 'U'}
+        <div className="p-4 border-t border-border bg-muted/10 flex flex-col gap-4">
+          <QuickLinks isCollapsed={false} />
+
+          <div className="border-t border-border/50 pt-3 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground font-sans">Appearance</span>
+              <ThemeSwitcher role={profile?.role} />
             </div>
-            <div className="text-xs min-w-0">
-              <p className="font-semibold text-foreground truncate">{profile?.fullName || 'Active User'}</p>
-              <p className="text-[10px] text-muted-foreground capitalize truncate">{profile?.role || 'staff'}</p>
+            <div className="flex items-center gap-2.5 border-t border-border pt-3 mt-1">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold font-serif text-sm border border-primary/20">
+                {profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <div className="text-xs min-w-0">
+                <p className="font-semibold text-foreground truncate">{profile?.fullName || 'Active User'}</p>
+                <p className="text-[10px] text-muted-foreground capitalize truncate">{profile?.role || 'staff'}</p>
+              </div>
             </div>
           </div>
         </div>

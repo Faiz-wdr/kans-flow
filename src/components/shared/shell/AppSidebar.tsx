@@ -7,6 +7,7 @@ import { ThemeSwitcher } from './ThemeSwitcher';
 import type { StaffProfile } from '@/types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { QuickLinks } from './QuickLinks';
 
 interface AppSidebarProps {
   profile: StaffProfile | null;
@@ -65,12 +66,16 @@ export function AppSidebar({ profile }: AppSidebarProps) {
       </div>
 
       {/* Sidebar Footer */}
-      <div className="p-4 border-t border-border bg-muted/10 flex flex-col gap-2">
-        <div className={cn('flex items-center justify-between', isCollapsed && 'justify-center')}>
-          {!isCollapsed && (
-            <span className="text-xs text-muted-foreground font-sans">Appearance</span>
-          )}
-          <ThemeSwitcher role={profile?.role} />
+      <div className="p-4 border-t border-border bg-muted/10 flex flex-col gap-4">
+        <QuickLinks isCollapsed={isCollapsed} />
+
+        <div className="border-t border-border/50 pt-3 flex flex-col gap-2">
+          <div className={cn('flex items-center justify-between', isCollapsed && 'justify-center')}>
+            {!isCollapsed && (
+              <span className="text-xs text-muted-foreground font-sans">Appearance</span>
+            )}
+            <ThemeSwitcher role={profile?.role} />
+          </div>
         </div>
       </div>
     </aside>
