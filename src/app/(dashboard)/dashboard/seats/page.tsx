@@ -7,7 +7,8 @@ import { EmptyState } from '@/components/shared/shell/EmptyState';
 import { LoadingState } from '@/components/shared/shell/LoadingState';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
-import { clientAuth } from '@/lib/supabase/auth-client';
+import { useProfile } from '@/providers/profile-provider';
+import { dashboardCache } from '@/lib/cache/dashboard-cache';
 import {
   RotateCw,
   Users,
@@ -38,17 +39,26 @@ interface ComputedSeatStatus {
 }
 
 export default function SeatsDashboardPage() {
-  const [loading, setLoading] = useState(true);
+  const profile = useProfile();
+  const cached = dashboardCache.get<{
+    zones: WorkspaceZone[];
+    seats: Seat[];
+    assignments: any[];
+    vacateRequests: VacateRequest[];
+    clientsWithoutSeats: Client[];
+    selectedZoneId: string;
+  }>('seats_data');
+
+  const [loading, setLoading] = useState(!cached);
   const [refreshing, setRefreshing] = useState(false);
-  const [profile, setProfile] = useState<StaffProfile | null>(null);
 
   // Database states
-  const [zones, setZones] = useState<WorkspaceZone[]>([]);
-  const [selectedZoneId, setSelectedZoneId] = useState<string>('');
-  const [seats, setSeats] = useState<Seat[]>([]);
-  const [assignments, setAssignments] = useState<any[]>([]);
-  const [vacateRequests, setVacateRequests] = useState<VacateRequest[]>([]);
-  const [clientsWithoutSeats, setClientsWithoutSeats] = useState<Client[]>([]);
+  const [zones, setZones] = useState<WorkspaceZone[]>(cached?.zones || []);
+  const [selectedZoneId, setSelectedZoneId] = useState<string>(cached?.selectedZoneId || '');
+  const [seats, setSeats] = useState<Seat[]>(cached?.seats || []);
+  const [assignments, setAssignments] = useState<any[]>(cached?.assignments || []);
+  const [vacateRequests, setVacateRequests] = useState<VacateRequest[]>(cached?.vacateRequests || []);
+  const [clientsWithoutSeats, setClientsWithoutSeats] = useState<Client[]>(cached?.clientsWithoutSeats || []);
 
   // Selected seat details for drawer
   const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null);
@@ -68,17 +78,13 @@ export default function SeatsDashboardPage() {
   const loadData = async (isRefresh = false) => {
     if (isRefresh) {
       setRefreshing(true);
-    } else {
+    } else if (!cached && seats.length === 0) {
       setLoading(true);
     }
 
     try {
-      // 1. Get user profile
-      const userProfile = await clientAuth.getUserProfile();
-      setProfile(userProfile);
-
-      if (userProfile?.organizationId) {
-        const orgId = userProfile.organizationId;
+      if (profile?.organizationId) {
+        const orgId = profile.organizationId;
 
         // Base promises
         const zonesPromise = supabase
@@ -200,6 +206,16 @@ export default function SeatsDashboardPage() {
             updatedAt: c.updated_at,
           }));
         setClientsWithoutSeats(freeClients);
+
+        // Save to in-memory cache for instant switching
+        dashboardCache.set('seats_data', {
+          zones: zonesData,
+          seats: seatsData,
+          assignments: assignmentsData,
+          vacateRequests: mappedVacateRequests,
+          clientsWithoutSeats: freeClients,
+          selectedZoneId,
+        });
       }
     } catch (err) {
       console.error('Error loading seat layout data:', err);

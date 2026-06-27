@@ -67,7 +67,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
 
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-border bg-muted/10 flex flex-col gap-4">
-        <QuickLinks isCollapsed={isCollapsed} />
+        {profile?.role === 'admin' && <QuickLinks isCollapsed={isCollapsed} />}
 
         <div className="border-t border-border/50 pt-3 flex flex-col gap-2">
           <div className={cn('flex items-center justify-between', isCollapsed && 'justify-center')}>

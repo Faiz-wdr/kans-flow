@@ -7,11 +7,12 @@ import { EmptyState } from '@/components/shared/shell/EmptyState';
 import { LoadingState } from '@/components/shared/shell/LoadingState';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
-import { clientAuth } from '@/lib/supabase/auth-client';
 import { getOnboardingRequests, approveOnboardingRequest, rejectOnboardingRequest, updateOnboardingRequest } from '@/services/db/onboarding';
 import { getClients } from '@/services/db/clients';
 import { getSeats } from '@/services/db/seats';
 import { useDialog } from '@/providers/dialog-provider';
+import { useProfile } from '@/providers/profile-provider';
+import { dashboardCache } from '@/lib/cache/dashboard-cache';
 import type { Client, OnboardingRequest, Seat, StaffProfile } from '@/types';
 import {
   Users,
@@ -32,16 +33,23 @@ import {
 } from 'lucide-react';
 
 export default function ClientsDashboardPage() {
+  const profile = useProfile();
+  const cached = dashboardCache.get<{
+    clients: Client[];
+    onboardingRequests: OnboardingRequest[];
+    allSeats: Seat[];
+    availableSeats: Seat[];
+  }>('clients_data');
+
   const [activeTab, setActiveTab] = useState<'active' | 'onboarding' | 'vacating' | 'archived'>('active');
-  const [profile, setProfile] = useState<StaffProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cached);
   const [refreshing, setRefreshing] = useState(false);
 
   // Data states
-  const [clients, setClients] = useState<Client[]>([]);
-  const [onboardingRequests, setOnboardingRequests] = useState<OnboardingRequest[]>([]);
-  const [availableSeats, setAvailableSeats] = useState<Seat[]>([]);
-  const [allSeats, setAllSeats] = useState<Seat[]>([]);
+  const [clients, setClients] = useState<Client[]>(cached?.clients || []);
+  const [onboardingRequests, setOnboardingRequests] = useState<OnboardingRequest[]>(cached?.onboardingRequests || []);
+  const [availableSeats, setAvailableSeats] = useState<Seat[]>(cached?.availableSeats || []);
+  const [allSeats, setAllSeats] = useState<Seat[]>(cached?.allSeats || []);
 
   // Selected request for review modal
   const [selectedRequest, setSelectedRequest] = useState<OnboardingRequest | null>(null);
@@ -77,32 +85,35 @@ export default function ClientsDashboardPage() {
   const loadData = async (isRefresh = false) => {
     if (isRefresh) {
       setRefreshing(true);
-    } else {
+    } else if (!cached && clients.length === 0) {
       setLoading(true);
     }
     try {
-      // 1. Get user profile
-      const userProfile = await clientAuth.getUserProfile();
-      setProfile(userProfile);
-
-      if (userProfile?.organizationId) {
+      if (profile?.organizationId) {
         // Run database queries concurrently
         const [clientsRes, onboardingRes, seatsRes] = await Promise.all([
-          getClients(supabase, userProfile.organizationId),
+          getClients(supabase, profile.organizationId),
           getOnboardingRequests(supabase),
-          getSeats(supabase, userProfile.organizationId)
+          getSeats(supabase, profile.organizationId)
         ]);
 
-        const clientsData = clientsRes.data;
-        setClients(clientsData || []);
+        const clientsData = clientsRes.data || [];
+        const onboardingData = onboardingRes.data || [];
+        const seatsData = seatsRes.data || [];
+        const freeSeats = seatsData.filter((s) => s.status === 'available');
 
-        const onboardingData = onboardingRes.data;
-        setOnboardingRequests(onboardingData || []);
-
-        const seatsData = seatsRes.data;
-        setAllSeats(seatsData || []);
-        const freeSeats = (seatsData || []).filter((s) => s.status === 'available');
+        setClients(clientsData);
+        setOnboardingRequests(onboardingData);
+        setAllSeats(seatsData);
         setAvailableSeats(freeSeats);
+
+        // Update cache
+        dashboardCache.set('clients_data', {
+          clients: clientsData,
+          onboardingRequests: onboardingData,
+          allSeats: seatsData,
+          availableSeats: freeSeats,
+        });
       }
     } catch (err) {
       console.error('Error loading clients dashboard data:', err);
@@ -114,7 +125,7 @@ export default function ClientsDashboardPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [profile?.organizationId]);
 
   useEffect(() => {
     if (selectedRequest) {

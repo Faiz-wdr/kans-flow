@@ -8,7 +8,8 @@ import { LoadingState } from '@/components/shared/shell/LoadingState';
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { clientAuth } from '@/lib/supabase/auth-client';
+import { useProfile } from '@/providers/profile-provider';
+import { dashboardCache } from '@/lib/cache/dashboard-cache';
 import { useDialog } from '@/providers/dialog-provider';
 import { createNotification } from '@/lib/notifications/notification-service';
 import { getSupportRequests, updateSupportRequest, createSupportNote, deleteSupportRequest, deleteSupportNote } from '@/services/db/support';
@@ -32,13 +33,18 @@ import {
 } from 'lucide-react';
 
 function SupportDashboardContent() {
-  const [loading, setLoading] = useState(true);
+  const profile = useProfile();
+  const cached = dashboardCache.get<{
+    tickets: any[];
+    staffList: StaffProfile[];
+  }>('support_data');
+
+  const [loading, setLoading] = useState(!cached);
   const [refreshing, setRefreshing] = useState(false);
-  const [profile, setProfile] = useState<StaffProfile | null>(null);
   const searchParams = useSearchParams();
 
   // Data states
-  const [tickets, setTickets] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<any[]>(cached?.tickets || []);
   const [activeTab, setActiveTab] = useState<'all' | 'open' | 'in_progress' | 'waiting' | 'resolved'>('all');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
 
@@ -54,7 +60,7 @@ function SupportDashboardContent() {
   const [showResolutionForm, setShowResolutionForm] = useState(false);
 
   // Staff registry (for assignment list representation)
-  const [staffList, setStaffList] = useState<StaffProfile[]>([]);
+  const [staffList, setStaffList] = useState<StaffProfile[]>(cached?.staffList || []);
 
   const { showAlert, showConfirm } = useDialog();
 
@@ -64,30 +70,28 @@ function SupportDashboardContent() {
   const loadData = async (isRefresh = false) => {
     if (isRefresh) {
       setRefreshing(true);
-    } else {
+    } else if (!cached && tickets.length === 0) {
       setLoading(true);
     }
 
     try {
-      // 1. Fetch user profile
-      const userProfile = await clientAuth.getUserProfile();
-      setProfile(userProfile);
-
-      if (userProfile?.organizationId) {
+      if (profile?.organizationId) {
         // Run database queries concurrently
         const [ticketsRes, staffRes] = await Promise.all([
           supabase
             .from('support_requests')
             .select('*, clients(id, full_name, email, phone)')
-            .eq('organization_id', userProfile.organizationId)
+            .eq('organization_id', profile.organizationId)
             .order('created_at', { ascending: false }),
           supabase
             .from('staff_profiles')
             .select('*')
-            .eq('organization_id', userProfile.organizationId)
+            .eq('organization_id', profile.organizationId)
+            .eq('is_deleted', false)
         ]);
 
-        setTickets(ticketsRes.data || []);
+        const fetchedTickets = ticketsRes.data || [];
+        setTickets(fetchedTickets);
         const mappedStaffList = (staffRes.data || []).map((s: any) => ({
           id: s.id,
           organizationId: s.organization_id,
@@ -96,8 +100,15 @@ function SupportDashboardContent() {
           isActive: s.is_active,
           createdAt: s.created_at,
           updatedAt: s.updated_at,
+          isDeleted: s.is_deleted || false,
         }));
         setStaffList(mappedStaffList);
+
+        // Update cache
+        dashboardCache.set('support_data', {
+          tickets: fetchedTickets,
+          staffList: mappedStaffList,
+        });
       }
     } catch (err) {
       console.error('Error loading support dashboard data:', err);
@@ -109,7 +120,7 @@ function SupportDashboardContent() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [profile?.organizationId]);
 
   // Support deep link query parameter routing
   useEffect(() => {

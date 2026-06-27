@@ -24,6 +24,14 @@ export interface Organization {
   updatedAt: string;
 }
 
+export interface Sector {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // 2. Staff Profiles
 export interface StaffProfile {
   id: string;
@@ -33,6 +41,13 @@ export interface StaffProfile {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  employeeId?: string;
+  email?: string;
+  mobileNumber?: string;
+  jobTitle?: string;
+  notes?: string;
+  isDeleted: boolean;
+  sectors?: Sector[];
 }
 
 // 3. Workspace Zones (Floors / Sections)

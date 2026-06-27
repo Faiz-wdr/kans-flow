@@ -75,14 +75,16 @@ export function NotificationDropdown() {
   useEffect(() => {
     loadNotifications();
 
-    // Subscribe to realtime updates
+    let isMounted = true;
     let channel: any;
+
     const subscribeRealtime = async () => {
       const userProfile = await clientAuth.getUserProfile();
-      if (!userProfile?.organizationId) return;
+      if (!userProfile?.organizationId || !isMounted) return;
 
+      const channelName = `dashboard_notifications_changes_${Math.random().toString(36).substring(2, 9)}`;
       channel = supabase
-        .channel('dashboard_notifications_changes')
+        .channel(channelName)
         .on(
           'postgres_changes',
           {
@@ -91,6 +93,7 @@ export function NotificationDropdown() {
             table: 'notifications',
           },
           (payload) => {
+            if (!isMounted) return;
             const newNotif = payload.new;
             // Check filters matching user profile (Realtime safety filter)
             if (
@@ -126,6 +129,7 @@ export function NotificationDropdown() {
     subscribeRealtime();
 
     return () => {
+      isMounted = false;
       if (channel) {
         supabase.removeChannel(channel);
       }

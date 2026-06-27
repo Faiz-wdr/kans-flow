@@ -5,6 +5,7 @@ import { AppSidebar } from './AppSidebar';
 import { TopNavbar } from './TopNavbar';
 import { MobileTopbar } from './MobileTopbar';
 import { MobileSidebarDrawer } from './MobileSidebarDrawer';
+import { ProfileProvider } from '@/providers/profile-provider';
 import type { StaffProfile } from '@/types';
 
 interface DashboardShellProps {
@@ -33,7 +34,8 @@ export function DashboardShell({ profile, children }: DashboardShellProps) {
   }, [profile?.role]);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
+    <ProfileProvider profile={profile}>
+      <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
       {/* 1. Desktop Left Sidebar */}
       <AppSidebar profile={profile} />
 
@@ -58,5 +60,6 @@ export function DashboardShell({ profile, children }: DashboardShellProps) {
         onClose={() => setIsMobileMenuOpen(false)}
       />
     </div>
+    </ProfileProvider>
   );
 }

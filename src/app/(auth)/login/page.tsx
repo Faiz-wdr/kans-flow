@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { clientAuth } from '@/lib/supabase/auth-client';
+import { Eye, EyeOff } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -18,6 +19,7 @@ type LoginInput = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -87,13 +89,26 @@ export default function LoginPage() {
               Password
             </label>
           </div>
-          <input
-            id="password"
-            type="password"
-            className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            placeholder="••••••••"
-            {...register('password')}
-          />
+          <div className="relative mt-1">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              className="block w-full rounded-md border border-input bg-background pl-3 pr-10 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder="••••••••"
+              {...register('password')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none flex items-center justify-center"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
           {errors.password && (
             <p className="text-xs text-destructive mt-1">{errors.password.message}</p>
           )}
@@ -103,42 +118,6 @@ export default function LoginPage() {
           {isSubmitting ? 'Signing in...' : 'Sign In'}
         </Button>
       </form>
-
-      {(process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_MOCK_LOGIN === 'true') && (
-        <div className="mt-6 border-t border-border pt-4 text-center">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-3">
-            Dev Quick Sign-in Bypass
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="text-xs border-primary/20 hover:border-primary/50 text-foreground"
-              onClick={async () => {
-                await clientAuth.signIn('admin@kansflow.com', 'password123');
-                router.refresh();
-                router.push('/dashboard');
-              }}
-            >
-              Sign In as Admin
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="text-xs border-primary/20 hover:border-primary/50 text-foreground"
-              onClick={async () => {
-                await clientAuth.signIn('staff@kansflow.com', 'password123');
-                router.refresh();
-                router.push('/dashboard');
-              }}
-            >
-              Sign In as Staff
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
