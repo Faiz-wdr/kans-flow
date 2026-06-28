@@ -22,6 +22,14 @@ export const metadata: Metadata = {
   title: "KANs Flow",
   description: "Workspace operations platform for KANs HUB",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/app_logo.png?v=2", type: "image/png" },
+      { url: "/favicon.ico?v=2" },
+    ],
+    shortcut: "/app_logo.png?v=2",
+    apple: "/apple-touch-icon.png?v=2",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
