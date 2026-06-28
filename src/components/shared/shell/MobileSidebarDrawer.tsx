@@ -30,7 +30,7 @@ export function MobileSidebarDrawer({ isOpen, onClose, profile }: MobileSidebarD
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 md:landscape:hidden lg:hidden">
+    <div className="fixed inset-0 z-50 lg:hidden">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity"

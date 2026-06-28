@@ -22,12 +22,23 @@ export const metadata: Metadata = {
   title: "KANs Flow",
   description: "Workspace operations platform for KANs HUB",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "KANs Flow",
+  },
+  other: {
+    "apple-touch-fullscreen": "yes",
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport = {
   themeColor: "#0a0a0a",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
 };
 
