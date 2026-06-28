@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { ClipboardList, Building2, HelpCircle } from 'lucide-react';
+import { ClipboardList, Building2, HelpCircle, Copy, Check } from 'lucide-react';
 
 interface QuickLinksProps {
   isCollapsed?: boolean;
@@ -140,6 +140,17 @@ const quickLinks = [
 ];
 
 export function QuickLinks({ isCollapsed = false }: QuickLinksProps) {
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
+
+  const handleCopy = (e: React.MouseEvent, item: typeof quickLinks[0]) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const fullUrl = typeof window !== 'undefined' ? window.location.origin + item.href : item.href;
+    navigator.clipboard.writeText(fullUrl);
+    setCopiedLink(item.name);
+    setTimeout(() => setCopiedLink(null), 2000);
+  };
+
   return (
     <div className="flex flex-col gap-2">
       {!isCollapsed ? (
@@ -156,12 +167,12 @@ export function QuickLinks({ isCollapsed = false }: QuickLinksProps) {
           const content = (
             <>
               <Icon className="h-4 w-4 shrink-0 transition-transform group-hover:scale-105" />
-              {!isCollapsed && <span className="font-sans truncate">{item.name}</span>}
+              {!isCollapsed && <span className="font-sans truncate flex-1 min-w-0">{item.name}</span>}
             </>
           );
 
           const className = cn(
-            'group flex items-center rounded-lg transition-all py-1.5 text-xs font-medium border border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground w-full',
+            'group flex items-center rounded-lg transition-all py-1.5 text-xs font-medium border border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground w-full min-w-0',
             isCollapsed ? 'justify-center px-0' : 'px-3 gap-2.5'
           );
 
@@ -181,15 +192,30 @@ export function QuickLinks({ isCollapsed = false }: QuickLinksProps) {
           }
 
           return (
-            <Link
-              key={item.name}
-              href={item.href}
-              target="_blank"
-              className={className}
-              title={isCollapsed ? item.name : undefined}
-            >
-              {content}
-            </Link>
+            <div key={item.name} className="flex items-center justify-between w-full min-w-0 group/row">
+              <Link
+                href={item.href}
+                target="_blank"
+                className={className}
+                title={isCollapsed ? item.name : undefined}
+              >
+                {content}
+              </Link>
+              {!isCollapsed && (
+                <button
+                  type="button"
+                  onClick={(e) => handleCopy(e, item)}
+                  className="p-1.5 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-muted/80 transition-colors shrink-0 ml-1 cursor-pointer"
+                  title={`Copy form URL for ${item.name}`}
+                >
+                  {copiedLink === item.name ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-500 animate-fade-in" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              )}
+            </div>
           );
         })}
       </div>

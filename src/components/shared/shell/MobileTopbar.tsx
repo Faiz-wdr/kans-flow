@@ -14,7 +14,7 @@ interface MobileTopbarProps {
 
 export function MobileTopbar({ profile, onMenuOpen }: MobileTopbarProps) {
   return (
-    <header className="sticky top-0 z-20 flex lg:hidden h-16 w-full items-center justify-between border-b border-border bg-background px-4">
+    <header className="sticky top-0 z-20 flex md:hidden h-16 w-full items-center justify-between border-b border-border bg-background px-4">
       {/* Left Section: Menu Toggle Trigger */}
       <button
         onClick={onMenuOpen}
