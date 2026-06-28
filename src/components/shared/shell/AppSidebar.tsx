@@ -19,7 +19,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
   return (
     <aside
       className={cn(
-        'hidden md:flex flex-col justify-between border-r border-border bg-card/40 transition-all duration-300 relative z-30 shrink-0 h-screen',
+        'hidden md:landscape:flex lg:flex flex-col justify-between border-r border-border bg-card/40 transition-all duration-300 relative z-30 shrink-0 h-screen',
         isCollapsed ? 'w-16' : 'w-64'
       )}
     >
@@ -40,7 +40,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
           {/* Toggle Sidebar Button */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden md:flex h-5 w-5 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted absolute -right-2.5 top-5.5 z-40 transition-colors shadow-sm"
+            className="hidden md:landscape:flex lg:flex h-5 w-5 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted absolute -right-2.5 top-5.5 z-40 transition-colors shadow-sm"
           >
             {isCollapsed ? (
               <ChevronRight className="h-3 w-3" />

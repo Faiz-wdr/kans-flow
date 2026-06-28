@@ -21,7 +21,7 @@ export default async function DashboardPage() {
       />
 
       {/* Basic Metrics Shell Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:landscape:grid-cols-4 lg:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Total Occupancy
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Main operational queues placeholders */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 md:landscape:grid-cols-2 lg:grid-cols-2">
         <EmptyState
           title="Onboarding Pipeline"
           description="Client onboarding requests waiting to be validated and assigned to workspace desks."

@@ -13,7 +13,7 @@ interface TopNavbarProps {
 
 export function TopNavbar({ profile }: TopNavbarProps) {
   return (
-    <header className="sticky top-0 z-20 hidden md:flex h-16 w-full items-center justify-between border-b border-border bg-background/95 px-8 backdrop-blur-md">
+    <header className="sticky top-0 z-20 hidden md:landscape:flex lg:flex h-16 w-full items-center justify-between border-b border-border bg-background/95 px-8 backdrop-blur-md">
       {/* Left Section: Breadcrumbs */}
       <div className="flex items-center gap-4">
         <AppBreadcrumbs />
