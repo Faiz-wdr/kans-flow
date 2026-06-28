@@ -101,6 +101,7 @@ export interface Client {
   fullName: string;
   email: string;
   phone: string;
+  service?: string;
   status: ClientStatus;
   onboardedAt: string | null;
   archivedAt: string | null;
@@ -139,6 +140,7 @@ export interface OnboardingRequest {
   email: string;
   phone: string;
   seatPreference: SeatType;
+  service?: 'Coworking' | 'Study Space' | 'Virtual Office' | 'Business Consulting' | 'Online Academy' | string;
   startDate: string;
   notes: string | null;
   status: OnboardingStatus;

@@ -147,9 +147,10 @@ export function SidebarNavigation({ role = 'staff', onLinkClick, isCollapsed = f
     window.addEventListener('onboarding-requests-updated', fetchCount);
     window.addEventListener('support-requests-updated', fetchSupportCount);
 
-    // Subscribe to realtime changes on onboarding_requests
+    // Subscribe to realtime changes on onboarding_requests using unique instance channel names
+    const onboardingChannelName = `sidebar-onboarding-${Math.random().toString(36).substring(2, 9)}`;
     const onboardingChannel = supabase
-      .channel('sidebar-onboarding-requests')
+      .channel(onboardingChannelName)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'onboarding_requests' },
@@ -160,8 +161,9 @@ export function SidebarNavigation({ role = 'staff', onLinkClick, isCollapsed = f
       .subscribe();
 
     // Subscribe to realtime changes on support_requests
+    const supportChannelName = `sidebar-support-${Math.random().toString(36).substring(2, 9)}`;
     const supportChannel = supabase
-      .channel('sidebar-support-requests')
+      .channel(supportChannelName)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'support_requests' },

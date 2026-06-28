@@ -629,7 +629,7 @@ function SupportDashboardContent() {
           icon={LifeBuoy}
         />
       ) : (
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="rounded-lg border border-border bg-card overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse font-sans">
             <thead>
               <tr className="border-b border-border bg-muted/30 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

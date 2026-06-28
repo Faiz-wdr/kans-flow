@@ -127,7 +127,7 @@ const quickLinks = [
   },
   {
     name: 'Virtual Office Onboarding',
-    href: '/membership?plan=virtual-office',
+    href: '/virtual-office',
     isExternal: false,
     icon: Building2,
   },

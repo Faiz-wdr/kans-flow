@@ -38,6 +38,7 @@ export async function submitOnboardingRequest(
         email: input.email,
         phone: input.phone,
         seat_preference: input.seatPreference,
+        service: 'Coworking',
         start_date: input.startDate,
         notes: serializedNotes,
         status: 'pending',
@@ -84,20 +85,30 @@ export async function getOnboardingRequests(supabase: SupabaseClient) {
   }
 
   // Map postgres snake_case columns to camelCase typescript interfaces
-  const mapped = (data || []).map((row: any) => ({
-    id: row.id,
-    organizationId: row.organization_id,
-    fullName: row.full_name,
-    email: row.email,
-    phone: row.phone,
-    seatPreference: row.seat_preference,
-    startDate: row.start_date,
-    notes: row.notes,
-    status: row.status,
-    reviewedBy: row.reviewed_by,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }));
+  const mapped = (data || []).map((row: any) => {
+    let parsedService = row.service;
+    if (!parsedService && row.notes) {
+      try {
+        const parsed = JSON.parse(row.notes);
+        if (parsed.service) parsedService = parsed.service;
+      } catch (e) {}
+    }
+    return {
+      id: row.id,
+      organizationId: row.organization_id,
+      fullName: row.full_name,
+      email: row.email,
+      phone: row.phone,
+      seatPreference: row.seat_preference,
+      service: parsedService || 'Coworking',
+      startDate: row.start_date,
+      notes: row.notes,
+      status: row.status,
+      reviewedBy: row.reviewed_by,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  });
 
   return { data: mapped as OnboardingRequest[], error: null };
 }
@@ -219,33 +230,35 @@ export async function approveOnboardingRequest(
     return { error: clientError };
   }
 
-  // 3. Create seat assignment
-  const { error: assignmentError } = await supabase
-    .from('seat_assignments')
-    .insert([
-      {
-        organization_id: organizationId,
-        client_id: client.id,
-        seat_id: seatId,
-        start_date: request.startDate, // Use the target joining date (could be edited by admin/staff)
-        is_active: true,
-      },
-    ]);
+  // 3. Create seat assignment if seatId is provided (e.g., for physical Coworking desks)
+  if (seatId) {
+    const { error: assignmentError } = await supabase
+      .from('seat_assignments')
+      .insert([
+        {
+          organization_id: organizationId,
+          client_id: client.id,
+          seat_id: seatId,
+          start_date: request.startDate, // Use the target joining date (could be edited by admin/staff)
+          is_active: true,
+        },
+      ]);
 
-  if (assignmentError) {
-    console.error('Error establishing seat lease assignment:', assignmentError);
-    return { error: assignmentError };
-  }
+    if (assignmentError) {
+      console.error('Error establishing seat lease assignment:', assignmentError);
+      return { error: assignmentError };
+    }
 
-  // 4. Set seat status to occupied
-  const { error: seatError } = await supabase
-    .from('seats')
-    .update({ status: 'occupied' })
-    .eq('id', seatId);
+    // 4. Set seat status to occupied
+    const { error: seatError } = await supabase
+      .from('seats')
+      .update({ status: 'occupied' })
+      .eq('id', seatId);
 
-  if (seatError) {
-    console.error('Error updating seat occupied state:', seatError);
-    return { error: seatError };
+    if (seatError) {
+      console.error('Error updating seat occupied state:', seatError);
+      return { error: seatError };
+    }
   }
 
   // 5. Update onboarding request status to approved, store the finalized joining date and any edited details

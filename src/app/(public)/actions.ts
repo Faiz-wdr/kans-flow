@@ -1,12 +1,13 @@
 'use server';
 
 import { createClient as createBaseClient } from '@supabase/supabase-js';
-import type { MembershipInput, SupportRequestInput } from '@/lib/validators';
+import type { MembershipInput, SupportRequestInput, VirtualOfficeInput } from '@/lib/validators';
 import { createNotification } from '@/lib/notifications/notification-service';
 
 // Reusable service-role client for server-side trusted operations
 function getAdminSupabase() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error('Server environment missing Supabase service credentials.');
@@ -45,6 +46,7 @@ export async function submitMembershipAction(input: MembershipInput) {
 
     // 2. Serialize secondary metadata details into existing 'notes' text column as JSON
     const serializedNotes = JSON.stringify({
+      service: 'Coworking',
       emergencyContact: input.emergencyContact,
       address: input.address,
       idProofType: input.idProofType,
@@ -54,20 +56,31 @@ export async function submitMembershipAction(input: MembershipInput) {
       userNotes: input.notes || '',
     });
 
-    const { error: insertError } = await supabase
+    let insertPayload: any = {
+      organization_id: organizationId,
+      full_name: input.fullName,
+      email: input.email,
+      phone: input.phone,
+      seat_preference: input.seatPreference,
+      service: 'Coworking',
+      start_date: input.startDate,
+      notes: serializedNotes,
+      status: 'pending',
+    };
+
+    let { error: insertError } = await supabase
       .from('onboarding_requests')
-      .insert([
-        {
-          organization_id: organizationId,
-          full_name: input.fullName,
-          email: input.email,
-          phone: input.phone,
-          seat_preference: input.seatPreference,
-          start_date: input.startDate,
-          notes: serializedNotes,
-          status: 'pending',
-        },
-      ]);
+      .insert([insertPayload]);
+
+    // Fallback if DB schema cache has not reloaded the new 'service' column yet
+    if (insertError && (insertError.message.includes('service') || insertError.message.includes('schema cache'))) {
+      console.warn('[Action] Retrying onboarding insert without explicit service column due to DB schema cache lag...');
+      delete insertPayload.service;
+      const fallbackResult = await supabase
+        .from('onboarding_requests')
+        .insert([insertPayload]);
+      insertError = fallbackResult.error;
+    }
 
     if (insertError) {
       console.error('[Action] Error inserting onboarding request:', insertError);
@@ -94,6 +107,122 @@ export async function submitMembershipAction(input: MembershipInput) {
   } catch (err: any) {
     console.error('[Action] submitMembershipAction unhandled error:', err);
     return { success: false, error: err.message || 'Server error occurred during submission.' };
+  }
+}
+
+/**
+ * Server-side Virtual Office application submission.
+ */
+export async function submitVirtualOfficeAction(input: VirtualOfficeInput) {
+  try {
+    const supabase = getAdminSupabase();
+
+    // 1. Retrieve first organization to bind to public request
+    const { data: orgs, error: orgError } = await supabase
+      .from('organizations')
+      .select('id')
+      .limit(1);
+
+    if (orgError) {
+      console.error('[Action] Error fetching organization:', orgError);
+      return { success: false, error: orgError.message };
+    }
+
+    const organizationId = orgs && orgs.length > 0 ? orgs[0].id : null;
+    if (!organizationId) {
+      return { success: false, error: 'No workspace organization found.' };
+    }
+
+    // 2. Serialize Virtual Office details into notes JSON (including service tag)
+    const serializedNotes = JSON.stringify({
+      service: 'Virtual Office',
+      plan: input.plan,
+      companyName: input.companyName,
+      natureOfBusiness: input.natureOfBusiness,
+      natureOfBusinessOther: input.natureOfBusinessOther || '',
+      email1: input.email1,
+      email2: input.email2 || '',
+      companyLogoUrl: input.companyLogoUrl || '',
+      gstin: input.gstin || '',
+      stampPaper: input.stampPaper,
+      reasonForVo: input.reasonForVo,
+      reasonForVoOther: input.reasonForVoOther || '',
+      biggestChallenge: input.biggestChallenge,
+      currentProblem: input.currentProblem,
+      consultantHandling: input.consultantHandling,
+      hearAboutUs: input.hearAboutUs,
+      hearAboutUsOther: input.hearAboutUsOther || '',
+      tentativeCompletionDate: input.tentativeCompletionDate,
+    });
+
+    let insertPayload: any = {
+      organization_id: organizationId,
+      full_name: input.companyName,
+      email: input.email1,
+      phone: 'N/A',
+      seat_preference: 'cabin',
+      service: 'Virtual Office',
+      start_date: input.startDate,
+      notes: serializedNotes,
+      status: 'pending',
+    };
+
+    let { data: insertedData, error: insertError } = await supabase
+      .from('onboarding_requests')
+      .insert([insertPayload])
+      .select('id')
+      .single();
+
+    // Fallback if DB schema cache has not reloaded the new 'service' column yet
+    if (insertError && (insertError.message.includes('service') || insertError.message.includes('schema cache'))) {
+      console.warn('[Action] Retrying Virtual Office insert without explicit service column due to DB schema cache lag...');
+      delete insertPayload.service;
+      const fallbackResult = await supabase
+        .from('onboarding_requests')
+        .insert([insertPayload])
+        .select('id')
+        .single();
+      insertedData = fallbackResult.data;
+      insertError = fallbackResult.error;
+    }
+
+    if (insertError || !insertedData) {
+      console.error('[Action] Error inserting Virtual Office request:', insertError);
+      return { success: false, error: insertError?.message || 'Error creating application record.' };
+    }
+
+    // 3. Create notification for Admin and Staff
+    const notificationMessage = `New Virtual Office application received from **${input.companyName}** (${input.plan} Plan).`;
+    
+    await createNotification(supabase, {
+      organizationId,
+      type: 'membership_submitted',
+      recipient: { type: 'admin_staff' },
+      title: 'New Virtual Office Application',
+      body: notificationMessage,
+      referenceModule: 'virtual_office',
+      referenceId: insertedData.id,
+      priority: 'high',
+    });
+
+    // 4. Record Activity Log
+    await supabase.from('activity_logs').insert([
+      {
+        organization_id: organizationId,
+        action: 'virtual_office_submitted',
+        details: {
+          requestId: insertedData.id,
+          companyName: input.companyName,
+          plan: input.plan,
+          email: input.email1,
+        },
+      },
+    ]);
+
+    return { success: true, referenceId: insertedData.id };
+  } catch (err: any) {
+    console.error('[Action] submitVirtualOfficeAction unhandled error:', err);
+    return { success: false, error: err.message || 'Server error occurred during Virtual Office submission.' };
   }
 }
 

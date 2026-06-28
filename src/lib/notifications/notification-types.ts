@@ -21,7 +21,7 @@ export type RecipientType =
 
 export type NotificationPriority = 'high' | 'medium' | 'low';
 
-export type ReferenceModule = 'membership' | 'support' | 'seat' | 'announcement' | 'general';
+export type ReferenceModule = 'membership' | 'virtual_office' | 'support' | 'seat' | 'announcement' | 'general';
 
 export interface CreateNotificationPayload {
   organizationId: string;

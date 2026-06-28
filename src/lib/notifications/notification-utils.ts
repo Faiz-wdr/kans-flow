@@ -31,6 +31,7 @@ export function mapRichTypeToDbEnum(type: RichNotificationType): NotificationTyp
 export function generateActionUrl(module: ReferenceModule, referenceId?: string): string {
   switch (module) {
     case 'membership':
+    case 'virtual_office':
       return '/dashboard/clients?tab=onboarding';
     case 'support':
       return referenceId ? `/dashboard/support?id=${referenceId}` : '/dashboard/support';

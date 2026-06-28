@@ -38,7 +38,7 @@ export function MobileSidebarDrawer({ isOpen, onClose, profile }: MobileSidebarD
       />
 
       {/* Drawer Body */}
-      <div className="fixed inset-y-0 left-0 w-72 bg-background border-r border-border flex flex-col justify-between shadow-2xl animate-slide-in z-50">
+      <div className="fixed inset-y-0 left-0 w-72 bg-background border-r border-border flex flex-col justify-between shadow-2xl animate-slide-in z-50 overflow-y-auto">
         <div>
           {/* Header */}
           <div className="h-16 flex items-center justify-between px-6 border-b border-border">
@@ -60,7 +60,7 @@ export function MobileSidebarDrawer({ isOpen, onClose, profile }: MobileSidebarD
           </div>
 
           {/* Navigation Links */}
-          <div className="py-6">
+          <div className="py-4">
             <div className="px-5 mb-2 text-[10px] font-bold tracking-wider text-muted-foreground uppercase select-none font-sans">
               Main Operations
             </div>
