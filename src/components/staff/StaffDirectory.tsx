@@ -672,7 +672,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Full Name *
                   </label>
                   <input
@@ -685,7 +685,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Email Address *
                   </label>
                   <input
@@ -698,7 +698,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Mobile Number
                   </label>
                   <input
@@ -710,7 +710,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Employee ID (Optional)
                   </label>
                   <input
@@ -722,7 +722,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Job Title
                   </label>
                   <input
@@ -734,7 +734,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Role *
                   </label>
                   <select
@@ -749,7 +749,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Temporary Password *
                   </label>
                   <input
@@ -763,7 +763,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-2">
                     Assigned Sectors (Can select multiple)
                   </label>
                   <div className="grid grid-cols-2 gap-2 border border-border bg-muted/10 rounded-lg p-3">
@@ -837,7 +837,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Full Name *
                   </label>
                   <input
@@ -850,7 +850,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Email Address *
                   </label>
                   <input
@@ -863,7 +863,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Mobile Number
                   </label>
                   <input
@@ -875,7 +875,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Employee ID (Optional)
                   </label>
                   <input
@@ -887,7 +887,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Job Title
                   </label>
                   <input
@@ -899,7 +899,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Role *
                   </label>
                   <select
@@ -914,7 +914,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Account Status
                   </label>
                   <select
@@ -928,7 +928,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                     Internal Notes / Comments
                   </label>
                   <textarea
@@ -941,7 +941,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                  <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-2">
                     Assigned Sectors
                   </label>
                   <div className="grid grid-cols-2 gap-2 border border-border bg-muted/10 rounded-lg p-3">
@@ -1022,7 +1022,7 @@ export function StaffDirectory({ initialStaff, sectors }: StaffDirectoryProps) {
               </p>
 
               <div>
-                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                <label className="block text-[10px] font-bold text-[#060606] dark:text-foreground uppercase tracking-wider mb-1">
                   New Password *
                 </label>
                 <input

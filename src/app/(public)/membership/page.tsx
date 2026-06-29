@@ -317,7 +317,7 @@ export default function MembershipFormPage() {
             {/* Full Name and Email Address Grid */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="fullName" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <label htmlFor="fullName" className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground">
                   Full Name
                 </label>
                 <input
@@ -336,7 +336,7 @@ export default function MembershipFormPage() {
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground">
                   Email Address
                 </label>
                 <input
@@ -358,7 +358,7 @@ export default function MembershipFormPage() {
             {/* Grid layout for Phone and Joining Date */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="phone" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <label htmlFor="phone" className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground">
                   Contact Number
                 </label>
                 <input
@@ -377,7 +377,7 @@ export default function MembershipFormPage() {
               </div>
 
               <div>
-                <label htmlFor="startDate" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <label htmlFor="startDate" className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground">
                   Joining Date
                 </label>
                 <input
@@ -397,7 +397,7 @@ export default function MembershipFormPage() {
 
             {/* Emergency Contact */}
             <div>
-              <label htmlFor="emergencyContact" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <label htmlFor="emergencyContact" className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground">
                 Emergency Contact Number
               </label>
               <input
@@ -417,7 +417,7 @@ export default function MembershipFormPage() {
 
             {/* Address */}
             <div>
-              <label htmlFor="address" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <label htmlFor="address" className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground">
                 Permanent Address
               </label>
               <textarea
@@ -439,7 +439,7 @@ export default function MembershipFormPage() {
 
             {/* Purpose of Use Section (Student vs Working) */}
             <div className="space-y-2.5 rounded-lg border border-border p-3.5 bg-muted/5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground">
                 Purpose of Use
               </label>
 
@@ -475,7 +475,7 @@ export default function MembershipFormPage() {
               <div className="mt-3 pt-2 border-t border-border/50">
                 {purposeType === 'Student' ? (
                   <div>
-                    <label htmlFor="purposeDetails" className="block text-xs text-muted-foreground">
+                    <label htmlFor="purposeDetails" className="block text-xs font-semibold text-[#060606] dark:text-foreground">
                       Preparing For (e.g. UPSC, JEE, CA, SSC)
                     </label>
                     <input
@@ -488,7 +488,7 @@ export default function MembershipFormPage() {
                   </div>
                 ) : (
                   <div>
-                    <label htmlFor="purposeDetails" className="block text-xs text-muted-foreground">
+                    <label htmlFor="purposeDetails" className="block text-xs font-semibold text-[#060606] dark:text-foreground">
                       Nature of Work / Company Details
                     </label>
                     <input
@@ -511,7 +511,7 @@ export default function MembershipFormPage() {
 
             {/* ID Proof Selection & Storage Upload */}
             <div className="space-y-3 rounded-lg border border-border p-3.5 bg-muted/5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground">
                 Verification ID Proof Document
               </label>
 

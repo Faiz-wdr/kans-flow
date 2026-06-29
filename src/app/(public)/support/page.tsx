@@ -486,7 +486,7 @@ function SupportFormContent() {
             </div>
           ) : (
             <div className="space-y-3 p-4 bg-muted/20 border border-border rounded-xl">
-              <label htmlFor="mobile" className="block text-xs font-bold text-muted-foreground uppercase tracking-wider text-left select-none">
+              <label htmlFor="mobile" className="block text-xs font-bold text-[#060606] dark:text-foreground uppercase tracking-wider text-left select-none">
                 Step 1: Enter Registered Mobile Number
               </label>
               <div className="flex gap-2">
@@ -539,7 +539,7 @@ function SupportFormContent() {
             <div className={`space-y-4 transition-all duration-200 ${!selectedMember ? 'opacity-40 pointer-events-none select-none' : ''}`}>
               {/* Description Textarea */}
               <div className="space-y-1">
-                <label htmlFor="description" className="block text-xs font-bold text-muted-foreground uppercase tracking-wider select-none">
+                <label htmlFor="description" className="block text-xs font-bold text-[#060606] dark:text-foreground uppercase tracking-wider select-none">
                   Step 2: Detailed Description
                 </label>
                 <textarea
@@ -563,7 +563,7 @@ function SupportFormContent() {
 
               {/* Priority Select */}
               <div className="space-y-1">
-                <label htmlFor="priority" className="block text-xs font-bold text-muted-foreground uppercase tracking-wider select-none">
+                <label htmlFor="priority" className="block text-xs font-bold text-[#060606] dark:text-foreground uppercase tracking-wider select-none">
                   Priority
                 </label>
                 <select

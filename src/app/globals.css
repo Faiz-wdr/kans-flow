@@ -136,6 +136,12 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif font-semibold;
   }
+  label {
+    color: #060606;
+  }
+  .dark label {
+    color: #f3f3f3;
+  }
   input[type="checkbox"] {
     accent-color: var(--primary);
     cursor: pointer;

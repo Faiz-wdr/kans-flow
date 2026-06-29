@@ -14,6 +14,12 @@ interface DialogOptions {
   onCancel?: () => void;
 }
 
+interface ToastItem {
+  id: string;
+  message: string;
+  type?: 'success' | 'info' | 'error';
+}
+
 interface DialogContextType {
   showAlert: (title: string, message: string) => void;
   showConfirm: (
@@ -24,6 +30,7 @@ interface DialogContextType {
     confirmText?: string,
     cancelText?: string
   ) => void;
+  showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
 }
 
 const DialogContext = createContext<DialogContextType | undefined>(undefined);
@@ -31,6 +38,7 @@ const DialogContext = createContext<DialogContextType | undefined>(undefined);
 export function DialogProvider({ children }: { children: React.ReactNode }) {
   const [dialog, setDialog] = useState<DialogOptions | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const showAlert = (title: string, message: string) => {
     setDialog({ title, message, type: 'alert' });
@@ -55,6 +63,14 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
       cancelText,
     });
     setIsOpen(true);
+  };
+
+  const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3000);
   };
 
   const handleConfirm = () => {
@@ -113,8 +129,25 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <DialogContext.Provider value={{ showAlert, showConfirm }}>
+    <DialogContext.Provider value={{ showAlert, showConfirm, showToast }}>
       {children}
+      {/* Toast Notification Floating Container */}
+      <div className="fixed bottom-5 right-5 z-[120] flex flex-col gap-2 pointer-events-none">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className="pointer-events-auto flex items-center gap-2.5 bg-foreground text-background dark:bg-card dark:text-foreground border border-border/40 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold animate-slide-in font-sans transition-all"
+          >
+            {t.type === 'error' ? (
+              <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+            )}
+            <span>{t.message}</span>
+          </div>
+        ))}
+      </div>
+
       {isOpen && dialog && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-sans animate-fade-in">
           {/* Backdrop */}

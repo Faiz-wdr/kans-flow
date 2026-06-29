@@ -57,7 +57,7 @@ export default function ClientsDashboardPage() {
   const [selectedRequest, setSelectedRequest] = useState<OnboardingRequest | null>(null);
   const [activeRequest, setActiveRequest] = useState<OnboardingRequest | null>(null);
   const [selectedSeatId, setSelectedSeatId] = useState<string>('');
-  
+
   // Onboarding Checklist state
   const [checklist, setChecklist] = useState({
     securityDeposit: false,
@@ -237,8 +237,8 @@ export default function ClientsDashboardPage() {
     if (!checklist.switchesExplained) uncheckedItems.push('Switches Explained');
 
     if (uncheckedItems.length > 0) {
-      const warningMessage = `The following checklist items are NOT checked:\n\n` + 
-        uncheckedItems.map(item => `• ${item}`).join('\n') + 
+      const warningMessage = `The following checklist items are NOT checked:\n\n` +
+        uncheckedItems.map(item => `• ${item}`).join('\n') +
         `\n\nDo you want to proceed with approval anyway?`;
 
       showConfirm(
@@ -263,7 +263,7 @@ export default function ClientsDashboardPage() {
     try {
       const isVO = selectedRequest.service === 'Virtual Office';
       const parsedNotes = parseRequestNotes(selectedRequest.notes);
-      
+
       const requestPayload = {
         ...selectedRequest,
         fullName: editFullName || selectedRequest.fullName,
@@ -290,7 +290,7 @@ export default function ClientsDashboardPage() {
       setSelectedSeatId('');
       setEditedStartDate('');
       loadData();
-      
+
       // Dispatch custom event to notify sidebar to update count
       window.dispatchEvent(new CustomEvent('onboarding-requests-updated'));
     } catch (err: any) {
@@ -328,7 +328,7 @@ export default function ClientsDashboardPage() {
       if (error) throw error;
       showAlert('Save Successful', 'Membership details updated successfully.');
       loadData();
-      
+
       // Update selectedRequest details locally
       setSelectedRequest((prev) => {
         if (!prev) return null;
@@ -351,7 +351,7 @@ export default function ClientsDashboardPage() {
   // Handle Onboarding Rejection (Delete request permanently)
   const handleReject = async () => {
     if (!selectedRequest || !profile) return;
-    
+
     const confirmMessage = `Are you sure you want to permanently delete the membership onboarding request for ${selectedRequest.fullName}? This action cannot be undone and will delete the record permanently.`;
     showConfirm('Confirm Rejection', confirmMessage, async () => {
       setActionLoading(true);
@@ -361,7 +361,7 @@ export default function ClientsDashboardPage() {
         showAlert('Rejection Successful', 'Membership onboarding request deleted permanently.');
         setSelectedRequest(null);
         loadData();
-        
+
         // Dispatch custom event to notify sidebar to update count
         window.dispatchEvent(new CustomEvent('onboarding-requests-updated'));
       } catch (err: any) {
@@ -378,12 +378,12 @@ export default function ClientsDashboardPage() {
       setSelectedRequest(req);
       setSelectedSeatId('');
       setEditedStartDate(req.startDate || '');
-      
+
       // Initialize edit states
       setEditFullName(req.fullName || '');
       setEditEmail(req.email || '');
       setEditPhone(req.phone || '');
-      
+
       const details = parseRequestNotes(req.notes);
       setEditEmergencyContact(details.emergencyContact || '');
       setEditAddress(details.address || '');
@@ -429,8 +429,8 @@ export default function ClientsDashboardPage() {
           <button
             onClick={() => setActiveTab('active')}
             className={`pb-1 font-medium cursor-pointer transition-colors ${activeTab === 'active'
-                ? 'border-b-2 border-primary text-foreground font-bold'
-                : 'text-muted-foreground hover:text-foreground'
+              ? 'border-b-2 border-primary text-foreground font-bold'
+              : 'text-muted-foreground hover:text-foreground'
               }`}
           >
             Active Members ({activeClients.length})
@@ -438,8 +438,8 @@ export default function ClientsDashboardPage() {
           <button
             onClick={() => setActiveTab('onboarding')}
             className={`pb-1 font-medium cursor-pointer transition-colors flex items-center gap-1.5 ${activeTab === 'onboarding'
-                ? 'border-b-2 border-primary text-foreground font-bold'
-                : 'text-muted-foreground hover:text-foreground'
+              ? 'border-b-2 border-primary text-foreground font-bold'
+              : 'text-muted-foreground hover:text-foreground'
               }`}
           >
             <span>Onboarding Requests</span>
@@ -452,8 +452,8 @@ export default function ClientsDashboardPage() {
           <button
             onClick={() => setActiveTab('vacating')}
             className={`pb-1 font-medium cursor-pointer transition-colors ${activeTab === 'vacating'
-                ? 'border-b-2 border-primary text-foreground font-bold'
-                : 'text-muted-foreground hover:text-foreground'
+              ? 'border-b-2 border-primary text-foreground font-bold'
+              : 'text-muted-foreground hover:text-foreground'
               }`}
           >
             Vacating Clients ({vacatingClients.length})
@@ -461,8 +461,8 @@ export default function ClientsDashboardPage() {
           <button
             onClick={() => setActiveTab('archived')}
             className={`pb-1 font-medium cursor-pointer transition-colors ${activeTab === 'archived'
-                ? 'border-b-2 border-primary text-foreground font-bold'
-                : 'text-muted-foreground hover:text-foreground'
+              ? 'border-b-2 border-primary text-foreground font-bold'
+              : 'text-muted-foreground hover:text-foreground'
               }`}
           >
             Archived History ({archivedClients.length})
@@ -471,37 +471,34 @@ export default function ClientsDashboardPage() {
 
         {/* Service Filter Options */}
         <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/60 text-xs font-sans self-start sm:self-auto shrink-0">
-          <span className="text-muted-foreground font-semibold px-2 flex items-center gap-1 select-none">
+          {/* <span className="text-muted-foreground font-semibold px-2 flex items-center gap-1 select-none">
             <Filter className="h-3.5 w-3.5 shrink-0 text-primary" />
             <span>Service:</span>
-          </span>
+          </span> */}
           <button
             onClick={() => setServiceFilter('all')}
-            className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
-              serviceFilter === 'all'
+            className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${serviceFilter === 'all'
                 ? 'bg-background text-foreground shadow-xs border border-border font-bold'
                 : 'text-muted-foreground hover:text-foreground'
-            }`}
+              }`}
           >
             All
           </button>
           <button
             onClick={() => setServiceFilter('Coworking')}
-            className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
-              serviceFilter === 'Coworking'
+            className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${serviceFilter === 'Coworking'
                 ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-bold'
                 : 'text-muted-foreground hover:text-foreground'
-            }`}
+              }`}
           >
             Coworking
           </button>
           <button
             onClick={() => setServiceFilter('Virtual Office')}
-            className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
-              serviceFilter === 'Virtual Office'
+            className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${serviceFilter === 'Virtual Office'
                 ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 font-bold'
                 : 'text-muted-foreground hover:text-foreground'
-            }`}
+              }`}
           >
             Virtual Office
           </button>
@@ -538,11 +535,10 @@ export default function ClientsDashboardPage() {
                       <tr key={client.id} className="hover:bg-muted/10">
                         <td className="p-4 font-semibold text-foreground">{client.fullName}</td>
                         <td className="p-4">
-                          <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold border ${
-                            isVO 
+                          <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold border ${isVO
                               ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
                               : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                          }`}>
+                            }`}>
                             {s}
                           </span>
                         </td>
@@ -608,22 +604,20 @@ export default function ClientsDashboardPage() {
                           <p className="text-xs text-muted-foreground mt-0.5">{req.email}</p>
                         </td>
                         <td className="p-4">
-                          <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold border ${
-                            isVO 
+                          <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold border ${isVO
                               ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
                               : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                          }`}>
+                            }`}>
                             {req.service || 'Coworking'}
                           </span>
                         </td>
                         <td className="p-4">
                           {isVO ? (
                             <div className="flex items-center gap-1.5">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
-                                details.plan === 'Gold' 
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${details.plan === 'Gold'
                                   ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 border border-amber-300'
                                   : 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-300'
-                              }`}>
+                                }`}>
                                 {details.plan || 'Silver'} Plan
                               </span>
                             </div>
@@ -664,12 +658,12 @@ export default function ClientsDashboardPage() {
                                 setSelectedRequest(req);
                                 setSelectedSeatId('');
                                 setEditedStartDate(req.startDate || '');
-                                
+
                                 // Initialize edit states
                                 setEditFullName(req.fullName || '');
                                 setEditEmail(req.email || '');
                                 setEditPhone(req.phone || '');
-                                
+
                                 const reqDetails = parseRequestNotes(req.notes);
                                 setEditEmergencyContact(reqDetails.emergencyContact || '');
                                 setEditAddress(reqDetails.address || '');
@@ -720,11 +714,10 @@ export default function ClientsDashboardPage() {
                       <tr key={client.id} className="hover:bg-muted/10">
                         <td className="p-4 font-semibold text-foreground">{client.fullName}</td>
                         <td className="p-4">
-                          <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold border ${
-                            isVO 
+                          <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold border ${isVO
                               ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
                               : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                          }`}>
+                            }`}>
                             {s}
                           </span>
                         </td>
@@ -781,11 +774,10 @@ export default function ClientsDashboardPage() {
                       <tr key={client.id} className="hover:bg-muted/10">
                         <td className="p-4 font-semibold text-foreground">{client.fullName}</td>
                         <td className="p-4">
-                          <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold border ${
-                            isVO 
+                          <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold border ${isVO
                               ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
                               : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                          }`}>
+                            }`}>
                             {s}
                           </span>
                         </td>

@@ -223,7 +223,7 @@ export default function VirtualOfficeFormPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="startDate" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                  <label htmlFor="startDate" className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-1">
                     Application Date <span className="text-destructive">*</span>
                   </label>
                   <input
@@ -243,7 +243,7 @@ export default function VirtualOfficeFormPage() {
 
               {/* Pricing Cards Selection */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-2">
                   Select Virtual Office Plan <span className="text-destructive">*</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -317,7 +317,7 @@ export default function VirtualOfficeFormPage() {
 
               {/* Company Name */}
               <div>
-                <label htmlFor="companyName" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                <label htmlFor="companyName" className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-1">
                   Company Name <span className="text-destructive">*</span>
                 </label>
                 <input
@@ -337,7 +337,7 @@ export default function VirtualOfficeFormPage() {
 
               {/* Nature of Business Searchable Select */}
               <div className="relative">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-1">
                   Nature of Business <span className="text-destructive">*</span>
                 </label>
 
@@ -399,7 +399,7 @@ export default function VirtualOfficeFormPage() {
               {/* Conditional Nature of Business Other */}
               {natureOfBusiness === 'Other' && (
                 <div className="animate-fade-in pt-1">
-                  <label htmlFor="natureOfBusinessOther" className="block text-xs font-semibold text-muted-foreground mb-1">
+                  <label htmlFor="natureOfBusinessOther" className="block text-xs font-semibold text-[#060606] dark:text-foreground mb-1">
                     Please specify your business <span className="text-destructive">*</span>
                   </label>
                   <input
@@ -421,7 +421,7 @@ export default function VirtualOfficeFormPage() {
               {/* Emails Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="email1" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                  <label htmlFor="email1" className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-1">
                     Primary Email Address <span className="text-destructive">*</span>
                   </label>
                   <input
@@ -440,7 +440,7 @@ export default function VirtualOfficeFormPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="email2" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                  <label htmlFor="email2" className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-1">
                     Secondary Email Address (Optional)
                   </label>
                   <input
@@ -461,7 +461,7 @@ export default function VirtualOfficeFormPage() {
 
               {/* Company Logo Upload */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-1">
                   Company Logo (Optional)
                 </label>
                 <input
@@ -520,7 +520,7 @@ export default function VirtualOfficeFormPage() {
 
               {/* GSTIN Field */}
               <div>
-                <label htmlFor="gstin" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                <label htmlFor="gstin" className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-1">
                   GSTIN (Optional)
                 </label>
                 <input
@@ -546,7 +546,7 @@ export default function VirtualOfficeFormPage() {
 
               {/* Stamp Paper Selection */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-2">
                   Required Stamp Paper <span className="text-destructive">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-3">
@@ -574,7 +574,7 @@ export default function VirtualOfficeFormPage() {
 
               {/* Reason for VO */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-2">
                   Reason for Taking Virtual Office <span className="text-destructive">*</span>
                 </label>
                 <div className="space-y-2">
@@ -618,7 +618,7 @@ export default function VirtualOfficeFormPage() {
 
               {/* Biggest Challenge */}
               <div>
-                <label htmlFor="biggestChallenge" className="block text-xs font-semibold text-foreground mb-1">
+                <label htmlFor="biggestChallenge" className="block text-xs font-semibold text-[#060606] dark:text-foreground mb-1">
                   What was the biggest challenge you faced before finding KANs HUB? <span className="text-destructive">*</span>
                 </label>
                 <textarea
@@ -638,7 +638,7 @@ export default function VirtualOfficeFormPage() {
 
               {/* Current Problem */}
               <div>
-                <label htmlFor="currentProblem" className="block text-xs font-semibold text-foreground mb-1">
+                <label htmlFor="currentProblem" className="block text-xs font-semibold text-[#060606] dark:text-foreground mb-1">
                   What specific problem are you trying to solve right now? <span className="text-destructive">*</span>
                 </label>
                 <textarea
@@ -666,7 +666,7 @@ export default function VirtualOfficeFormPage() {
 
               {/* Consultant Handling */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-2">
                   Consultant Handling Registration <span className="text-destructive">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-3 text-xs">
@@ -688,7 +688,7 @@ export default function VirtualOfficeFormPage() {
 
               {/* How Did You Hear About Us */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-2">
                   How Did You Hear About Us? <span className="text-destructive">*</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -724,7 +724,7 @@ export default function VirtualOfficeFormPage() {
 
               {/* Tentative Registration Completion Date */}
               <div>
-                <label htmlFor="tentativeCompletionDate" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                <label htmlFor="tentativeCompletionDate" className="block text-xs font-semibold uppercase tracking-wider text-[#060606] dark:text-foreground mb-1">
                   Tentative Registration Completion Date <span className="text-destructive">*</span>
                 </label>
                 <input

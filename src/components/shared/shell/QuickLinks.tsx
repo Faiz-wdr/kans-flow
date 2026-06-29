@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ClipboardList, Building2, HelpCircle, Copy, Check } from 'lucide-react';
+import { useDialog } from '@/providers/dialog-provider';
 
 interface QuickLinksProps {
   isCollapsed?: boolean;
@@ -141,6 +142,7 @@ const quickLinks = [
 
 export function QuickLinks({ isCollapsed = false }: QuickLinksProps) {
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const { showToast } = useDialog();
 
   const handleCopy = (e: React.MouseEvent, item: typeof quickLinks[0]) => {
     e.preventDefault();
@@ -148,6 +150,7 @@ export function QuickLinks({ isCollapsed = false }: QuickLinksProps) {
     const fullUrl = typeof window !== 'undefined' ? window.location.origin + item.href : item.href;
     navigator.clipboard.writeText(fullUrl);
     setCopiedLink(item.name);
+    showToast(`Link copied for ${item.name}`);
     setTimeout(() => setCopiedLink(null), 2000);
   };
 
