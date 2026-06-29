@@ -87,10 +87,11 @@ export async function getOnboardingRequests(supabase: SupabaseClient) {
   // Map postgres snake_case columns to camelCase typescript interfaces
   const mapped = (data || []).map((row: any) => {
     let parsedService = row.service;
-    if (!parsedService && row.notes) {
+    let notesObj: any = {};
+    if (row.notes) {
       try {
-        const parsed = JSON.parse(row.notes);
-        if (parsed.service) parsedService = parsed.service;
+        notesObj = JSON.parse(row.notes);
+        if (!parsedService && notesObj.service) parsedService = notesObj.service;
       } catch (e) {}
     }
     return {
@@ -107,6 +108,16 @@ export async function getOnboardingRequests(supabase: SupabaseClient) {
       reviewedBy: row.reviewed_by,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+      agreementStatus: row.agreement_status || notesObj.agreementStatus || 'Pending',
+      agreementToken: row.agreement_token || notesObj.agreementToken,
+      agreementTokenExpiresAt: row.agreement_token_expires_at || notesObj.agreementTokenExpiresAt,
+      agreementSentAt: row.agreement_sent_at || notesObj.agreementSentAt,
+      agreementViewedAt: row.agreement_viewed_at || notesObj.agreementViewedAt,
+      agreementSignedAt: row.agreement_signed_at || notesObj.agreementSignedAt,
+      signatureImageUrl: row.signature_image_url || notesObj.signatureImageUrl,
+      signedPdfUrl: row.signed_pdf_url || notesObj.signedPdfUrl,
+      emailSentAt: row.email_sent_at || notesObj.emailSentAt,
+      resendCount: row.resend_count ?? notesObj.resendCount ?? 0,
     };
   });
 

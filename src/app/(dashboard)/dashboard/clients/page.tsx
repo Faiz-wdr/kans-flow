@@ -13,6 +13,7 @@ import { getSeats } from '@/services/db/seats';
 import { useDialog } from '@/providers/dialog-provider';
 import { useProfile } from '@/providers/profile-provider';
 import { dashboardCache } from '@/lib/cache/dashboard-cache';
+import { prepareAgreementData, renderAgreementHtml } from '@/lib/agreements/agreement-template';
 import type { Client, OnboardingRequest, Seat, StaffProfile } from '@/types';
 import {
   Users,
@@ -31,6 +32,13 @@ import {
   Loader2,
   RotateCw,
   Filter,
+  Send,
+  Download,
+  RotateCcw,
+  Edit2,
+  PenTool,
+  ExternalLink,
+  CheckCircle2,
 } from 'lucide-react';
 
 export default function ClientsDashboardPage() {
@@ -79,7 +87,18 @@ export default function ClientsDashboardPage() {
   const [editPurposeType, setEditPurposeType] = useState<'Student' | 'Working'>('Student');
   const [editPurposeDetails, setEditPurposeDetails] = useState('');
 
-  const { showAlert, showConfirm } = useDialog();
+  // Phase 10: Virtual Office Admin Edit & Agreement Preview Modal states
+  const [isEditingVo, setIsEditingVo] = useState(false);
+  const [editVoCompanyName, setEditVoCompanyName] = useState('');
+  const [editVoPlan, setEditVoPlan] = useState('Gold');
+  const [editVoNatureOfBusiness, setEditVoNatureOfBusiness] = useState('');
+  const [editVoEmail, setEditVoEmail] = useState('');
+  const [editVoGstin, setEditVoGstin] = useState('');
+  const [editVoAddress, setEditVoAddress] = useState('');
+  const [editVoVirtualSuiteNo, setEditVoVirtualSuiteNo] = useState('');
+  const [showAgreementPreviewModal, setShowAgreementPreviewModal] = useState(false);
+
+  const { showAlert, showConfirm, showToast } = useDialog();
 
   const supabase = createClient();
 
@@ -145,11 +164,45 @@ export default function ClientsDashboardPage() {
     }
   }, [selectedRequest]);
 
-  // Filter clients by tab and service
-  const rawActiveClients = clients.filter((c) => c.status === 'active');
+  // Include Virtual Office requests directly in Active Members registry
+  const voRequestsAsClients = onboardingRequests
+    .filter((r) => r.service === 'Virtual Office')
+    .map((r) => {
+      const existingClient = clients.find((c) => c.email === r.email);
+      if (existingClient) return existingClient;
+      let companyName = r.fullName;
+      if (r.notes) {
+        try {
+          const parsed = JSON.parse(r.notes);
+          if (parsed.companyName) companyName = parsed.companyName;
+        } catch (e) {}
+      }
+      return {
+        id: r.id,
+        organizationId: r.organizationId,
+        fullName: companyName,
+        email: r.email,
+        phone: r.phone,
+        status: 'active' as const,
+        service: 'Virtual Office',
+        onboardedAt: r.createdAt,
+        archivedAt: null,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+      };
+    });
+
+  const combinedActiveClients = [...clients.filter((c) => c.status === 'active')];
+  voRequestsAsClients.forEach((voClient) => {
+    if (!combinedActiveClients.some((c) => c.email === voClient.email)) {
+      combinedActiveClients.push(voClient);
+    }
+  });
+
+  const rawActiveClients = combinedActiveClients;
   const rawVacatingClients = clients.filter((c) => c.status === 'vacating');
   const rawArchivedClients = clients.filter((c) => c.status === 'archived');
-  const rawPendingRequests = onboardingRequests.filter((r) => r.status === 'pending');
+  const rawPendingRequests = onboardingRequests.filter((r) => r.status === 'pending' && r.service !== 'Virtual Office');
 
   const filterByService = <T extends { service?: string; email: string }>(items: T[]) => {
     return items.filter((item) => {
@@ -372,8 +425,31 @@ export default function ClientsDashboardPage() {
     });
   };
 
+  const handleDeleteVoClient = async () => {
+    if (!selectedRequest || !profile) return;
+    const companyName = parseRequestNotes(selectedRequest.notes).companyName || selectedRequest.fullName;
+    showConfirm(
+      'Confirm Permanent Deletion',
+      `Are you sure you want to permanently delete the Virtual Office client record for "${companyName}"? This will remove all associated agreements and client data permanently.`,
+      async () => {
+        setActionLoading(true);
+        try {
+          await rejectOnboardingRequest(supabase, selectedRequest.id, profile.id);
+          await supabase.from('clients').delete().eq('email', selectedRequest.email);
+          showAlert('Deleted Successfully', 'Virtual Office client record deleted permanently.');
+          setSelectedRequest(null);
+          loadData(true);
+        } catch (err: any) {
+          showAlert('Deletion Failed', err.message || 'An error occurred while deleting.');
+        } finally {
+          setActionLoading(false);
+        }
+      }
+    );
+  };
+
   const handleViewClientDetails = (client: Client) => {
-    const req = onboardingRequests.find((r) => r.email === client.email);
+    const req = onboardingRequests.find((r) => r.email === client.email || r.id === client.id);
     if (req) {
       setSelectedRequest(req);
       setSelectedSeatId('');
@@ -389,6 +465,14 @@ export default function ClientsDashboardPage() {
       setEditAddress(details.address || '');
       setEditPurposeType(details.purposeType === 'Working' ? 'Working' : 'Student');
       setEditPurposeDetails(details.purposeDetails || '');
+
+      setIsEditingVo(false);
+      setEditVoCompanyName(details.companyName || req.fullName || '');
+      setEditVoPlan(details.plan || 'Silver');
+      setEditVoNatureOfBusiness(details.natureOfBusiness || '');
+      setEditVoEmail(details.email1 || req.email || '');
+      setEditVoGstin(details.gstin || '');
+      setEditVoAddress(details.address || '');
     } else {
       showAlert('No Onboarding Details', 'No onboarding request details found for this member.');
     }
@@ -669,6 +753,14 @@ export default function ClientsDashboardPage() {
                                 setEditAddress(reqDetails.address || '');
                                 setEditPurposeType(reqDetails.purposeType === 'Working' ? 'Working' : 'Student');
                                 setEditPurposeDetails(reqDetails.purposeDetails || '');
+
+                                setIsEditingVo(false);
+                                setEditVoCompanyName(reqDetails.companyName || req.fullName || '');
+                                setEditVoPlan(reqDetails.plan || 'Silver');
+                                setEditVoNatureOfBusiness(reqDetails.natureOfBusiness || '');
+                                setEditVoEmail(reqDetails.email1 || req.email || '');
+                                setEditVoGstin(reqDetails.gstin || '');
+                                setEditVoAddress(reqDetails.address || '');
                               }}
                             >
                               <Eye className="h-3.5 w-3.5" />
@@ -898,37 +990,296 @@ export default function ClientsDashboardPage() {
                 {/* Main Details View */}
                 {activeRequest.service === 'Virtual Office' ? (
                   <div className="space-y-4 text-xs font-sans">
-                    {/* Company Profile */}
-                    <div>
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                        Company Profile & Plan
-                      </h4>
-                      <div className="rounded-lg border border-border p-3.5 bg-muted/5 space-y-2.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground font-semibold">Company Name:</span>
-                          <span className="font-bold text-foreground">{details.companyName || activeRequest.fullName}</span>
+                    {/* Digital Agreement Status & E-Signature Workflow Box */}
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3 font-sans">
+                      <div className="flex items-center justify-between border-b border-primary/10 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-primary" />
+                          <span className="font-bold text-foreground text-xs uppercase tracking-wider">Digital Agreement Status</span>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground font-semibold">Selected Plan:</span>
-                          <span className="font-extrabold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                            {details.plan || 'Silver'} Plan
-                          </span>
+                        <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                          activeRequest.agreementStatus === 'Signed'
+                            ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                            : activeRequest.agreementStatus === 'Viewed'
+                            ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                            : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                        }`}>
+                          {activeRequest.agreementStatus || 'Sent'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <div>
+                          <span className="text-muted-foreground block text-[10px]">Sent Date:</span>
+                          <span className="font-semibold">{activeRequest.agreementSentAt ? new Date(activeRequest.agreementSentAt).toLocaleDateString() : 'N/A'}</span>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground font-semibold">Nature of Business:</span>
-                          <span className="font-medium text-foreground">{details.natureOfBusiness === 'Other' ? details.natureOfBusinessOther : details.natureOfBusiness}</span>
+                        <div>
+                          <span className="text-muted-foreground block text-[10px]">Viewed Date:</span>
+                          <span className="font-semibold">{activeRequest.agreementViewedAt ? new Date(activeRequest.agreementViewedAt).toLocaleDateString() : 'Not Viewed'}</span>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground font-semibold">Primary Email:</span>
-                          <span className="font-mono">{details.email1 || activeRequest.email}</span>
+                        <div className="col-span-2">
+                          <span className="text-muted-foreground block text-[10px]">Signed Date:</span>
+                          <span className="font-semibold">{activeRequest.agreementSignedAt ? new Date(activeRequest.agreementSignedAt).toLocaleString() : 'Pending Execution'}</span>
                         </div>
-                        {details.email2 && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground font-semibold">Secondary Email:</span>
-                            <span className="font-mono">{details.email2}</span>
-                          </div>
+                      </div>
+
+                      <div className="pt-2 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs font-semibold gap-1.5 cursor-pointer"
+                          disabled={actionLoading}
+                          onClick={async () => {
+                            setActionLoading(true);
+                            try {
+                              const { resendAgreementAction } = await import('@/app/agreement/actions');
+                              const res = await resendAgreementAction(activeRequest.id);
+                              if (res.success) {
+                                showToast('Agreement regenerated & email dispatched via Resend');
+                                loadData(true);
+                              } else {
+                                showToast(res.error || 'Resend failed');
+                              }
+                            } catch (e: any) {
+                              showToast(e.message || 'Error resending');
+                            } finally {
+                              setActionLoading(false);
+                            }
+                          }}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          <span>Resend Agreement</span>
+                        </Button>
+
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs font-semibold gap-1.5 cursor-pointer"
+                          onClick={() => setShowAgreementPreviewModal(true)}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>View Agreement (Preview)</span>
+                        </Button>
+
+                        {activeRequest.signedPdfUrl && (
+                          <a
+                            href={activeRequest.signedPdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 h-8 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold shadow-xs transition-colors"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            <span>Download Signed PDF</span>
+                          </a>
+                        )}
+
+                        {activeRequest.signatureImageUrl && (
+                          <a
+                            href={activeRequest.signatureImageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 h-8 px-3 bg-card hover:bg-muted border border-border rounded-md text-xs font-semibold text-foreground transition-colors"
+                          >
+                            <PenTool className="h-3.5 w-3.5" />
+                            <span>View Signature</span>
+                          </a>
                         )}
                       </div>
+                    </div>
+
+                    {/* Company Profile & Admin Editing Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Company Profile & Plan Details
+                        </h4>
+                        {!isEditingVo ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-[11px] font-semibold gap-1"
+                            onClick={() => {
+                              setIsEditingVo(true);
+                              setEditVoCompanyName(details.companyName || activeRequest.fullName || '');
+                              setEditVoPlan(details.plan || 'Silver');
+                              setEditVoNatureOfBusiness(details.natureOfBusiness || '');
+                              setEditVoEmail(details.email1 || activeRequest.email || '');
+                              setEditVoGstin(details.gstin || '');
+                              setEditVoAddress(details.address || '');
+                              setEditVoVirtualSuiteNo(details.virtualSuiteNo || '');
+                            }}
+                          >
+                            <Edit2 className="h-3 w-3 text-primary" />
+                            <span>Edit Client Details</span>
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-[11px] font-semibold text-rose-500"
+                            onClick={() => setIsEditingVo(false)}
+                          >
+                            Cancel Edit
+                          </Button>
+                        )}
+                      </div>
+
+                      {!isEditingVo ? (
+                        <div className="rounded-lg border border-border p-3.5 bg-muted/5 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground font-semibold">Virtual Suite No:</span>
+                            <span className="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded font-mono border border-primary/20">
+                              {details.virtualSuiteNo || `VS10${activeRequest.id.slice(0, 2).toUpperCase()}`}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground font-semibold">Company Name:</span>
+                            <span className="font-bold text-foreground">{details.companyName || activeRequest.fullName}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground font-semibold">Selected Plan:</span>
+                            <span className="font-extrabold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                              {details.plan || 'Silver'} Plan
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground font-semibold">Nature of Business:</span>
+                            <span className="font-medium text-foreground">{details.natureOfBusiness === 'Other' ? details.natureOfBusinessOther : details.natureOfBusiness}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground font-semibold">Primary Email:</span>
+                            <span className="font-mono">{details.email1 || activeRequest.email}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground font-semibold">GSTIN:</span>
+                            <span className="font-mono font-bold">{details.gstin || 'Not Provided'}</span>
+                          </div>
+                          <div className="pt-1 border-t border-border/40">
+                            <span className="text-muted-foreground font-semibold block mb-0.5">Business Address:</span>
+                            <p className="text-[11px] text-foreground font-medium">{details.address || 'N/A'}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3.5 space-y-3 animate-fade-in text-xs">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <label className="font-semibold text-foreground">Virtual Suite No:</label>
+                              <input
+                                type="text"
+                                className="block w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs font-mono uppercase focus:ring-1 focus:ring-primary font-bold text-primary"
+                                placeholder="VS1000"
+                                value={editVoVirtualSuiteNo}
+                                onChange={(e) => setEditVoVirtualSuiteNo(e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="font-semibold text-foreground">Plan:</label>
+                              <select
+                                className="block w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary font-semibold"
+                                value={editVoPlan}
+                                onChange={(e) => setEditVoPlan(e.target.value)}
+                              >
+                                <option value="Silver">Silver Plan (1 Year)</option>
+                                <option value="Gold">Gold Plan (2 Years)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-semibold text-foreground">Company Name:</label>
+                            <input
+                              type="text"
+                              className="block w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary font-semibold"
+                              value={editVoCompanyName}
+                              onChange={(e) => setEditVoCompanyName(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-semibold text-foreground">GSTIN:</label>
+                            <input
+                              type="text"
+                              className="block w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs font-mono uppercase focus:ring-1 focus:ring-primary font-semibold"
+                              value={editVoGstin}
+                              onChange={(e) => setEditVoGstin(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-semibold text-foreground">Nature of Business:</label>
+                            <input
+                              type="text"
+                              className="block w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary font-semibold"
+                              value={editVoNatureOfBusiness}
+                              onChange={(e) => setEditVoNatureOfBusiness(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-semibold text-foreground">Primary Email Address:</label>
+                            <input
+                              type="email"
+                              className="block w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs font-mono focus:ring-1 focus:ring-primary font-semibold"
+                              value={editVoEmail}
+                              onChange={(e) => setEditVoEmail(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-semibold text-foreground">Registered Business Address:</label>
+                            <textarea
+                              rows={2}
+                              className="block w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary font-semibold resize-none"
+                              value={editVoAddress}
+                              onChange={(e) => setEditVoAddress(e.target.value)}
+                            />
+                          </div>
+
+                          <Button
+                            type="button"
+                            className="w-full h-9 text-xs font-bold gap-1.5 mt-2 cursor-pointer"
+                            disabled={actionLoading}
+                            onClick={async () => {
+                              setActionLoading(true);
+                              try {
+                                const { updateOnboardingDetailsAction, resendAgreementAction } = await import('@/app/agreement/actions');
+                                const updateRes = await updateOnboardingDetailsAction(activeRequest.id, {
+                                  companyName: editVoCompanyName,
+                                  plan: editVoPlan,
+                                  natureOfBusiness: editVoNatureOfBusiness,
+                                  email: editVoEmail,
+                                  gstin: editVoGstin,
+                                  address: editVoAddress,
+                                  virtualSuiteNo: editVoVirtualSuiteNo,
+                                });
+                                if (!updateRes.success) throw new Error(updateRes.error);
+
+                                const resendRes = await resendAgreementAction(activeRequest.id);
+                                if (!resendRes.success) throw new Error(resendRes.error);
+
+                                showToast('Client details updated & new agreement link sent via Resend!');
+                                setIsEditingVo(false);
+                                loadData(true);
+                              } catch (err: any) {
+                                showToast(err.message || 'Error saving details & resending');
+                              } finally {
+                                setActionLoading(false);
+                              }
+                            }}
+                          >
+                            {actionLoading ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Send className="h-3.5 w-3.5" />
+                            )}
+                            <span>Save Changes &amp; Resend Agreement</span>
+                          </Button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Logo & Tax Compliance */}
@@ -1285,8 +1636,23 @@ export default function ClientsDashboardPage() {
               </div>
 
               {/* Action Buttons Panel */}
-              <div className="border-t border-border pt-4 mt-6 space-y-3.5">
-                {isPending ? (
+              <div className="border-t border-border pt-4 mt-6 space-y-3.5 font-sans">
+                {activeRequest.service === 'Virtual Office' ? (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="w-full text-xs font-bold gap-1.5 h-9 cursor-pointer"
+                    disabled={actionLoading}
+                    onClick={handleDeleteVoClient}
+                  >
+                    {actionLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <X className="h-3.5 w-3.5" />
+                    )}
+                    <span>Delete Client Record</span>
+                  </Button>
+                ) : isPending ? (
                   <>
                     <Button
                       type="button"
@@ -1317,7 +1683,7 @@ export default function ClientsDashboardPage() {
                       <Button
                         type="button"
                         className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600"
-                        disabled={(activeRequest.service !== 'Virtual Office' && !selectedSeatId) || actionLoading}
+                        disabled={!selectedSeatId || actionLoading}
                         onClick={handleApproveWithChecklistCheck}
                       >
                         {actionLoading ? (
@@ -1328,7 +1694,7 @@ export default function ClientsDashboardPage() {
                         ) : (
                           <>
                             <UserCheck className="h-3.5 w-3.5 mr-1" />
-                            <span>{activeRequest.service === 'Virtual Office' ? 'Approve Application' : 'Approve & Assign'}</span>
+                            <span>Approve &amp; Assign</span>
                           </>
                         )}
                       </Button>
@@ -1345,6 +1711,49 @@ export default function ClientsDashboardPage() {
           </div>
         );
       })()}
+
+      {/* Phase 10: Admin Inline Agreement Preview Modal */}
+      {showAgreementPreviewModal && activeRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in font-sans">
+          <div className="relative w-full max-w-4xl bg-background border border-border rounded-2xl shadow-2xl flex flex-col h-[85vh] overflow-hidden">
+            {/* Header */}
+            <div className="h-14 px-6 border-b border-border flex items-center justify-between bg-muted/20 shrink-0">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                <h3 className="text-sm font-bold text-foreground">
+                  Official Agreement Preview – {parseRequestNotes(activeRequest.notes).companyName || activeRequest.fullName}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowAgreementPreviewModal(false)}
+                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Render HTML Content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100 dark:bg-slate-950">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: renderAgreementHtml(prepareAgreementData(activeRequest))
+                }}
+                className="prose max-w-none"
+              />
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-border bg-background flex items-center justify-between shrink-0">
+              <span className="text-xs text-muted-foreground">
+                Displaying live generated agreement layout. No download required.
+              </span>
+              <Button size="sm" onClick={() => setShowAgreementPreviewModal(false)} className="font-semibold">
+                Close Preview
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageContainer>
   );
 }

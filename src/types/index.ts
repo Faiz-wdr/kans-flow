@@ -132,6 +132,16 @@ export interface SeatAssignment {
   updatedAt: string;
 }
 
+export type AgreementStatus = 'Pending' | 'Sent' | 'Viewed' | 'Signed';
+
+export interface OnboardingActivityLog {
+  id: string;
+  requestId: string;
+  action: string;
+  details?: string | null;
+  createdAt: string;
+}
+
 // 9. Onboarding Requests
 export interface OnboardingRequest {
   id: string;
@@ -147,6 +157,18 @@ export interface OnboardingRequest {
   reviewedBy: string | null;
   createdAt: string;
   updatedAt: string;
+
+  // Phase 10: Digital Agreement & E-Signature Workflow fields
+  agreementStatus?: AgreementStatus;
+  agreementToken?: string | null;
+  agreementTokenExpiresAt?: string | null;
+  agreementSentAt?: string | null;
+  agreementViewedAt?: string | null;
+  agreementSignedAt?: string | null;
+  signatureImageUrl?: string | null;
+  signedPdfUrl?: string | null;
+  emailSentAt?: string | null;
+  resendCount?: number;
 }
 
 // 10. Support Requests

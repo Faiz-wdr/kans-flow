@@ -134,6 +134,11 @@ export async function submitVirtualOfficeAction(input: VirtualOfficeInput) {
     }
 
     // 2. Serialize Virtual Office details into notes JSON (including service tag)
+    // 2. Generate secure signing token and prepare notes payload
+    const token = crypto.randomUUID();
+    const tokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
+    const sentAt = new Date().toISOString();
+
     const serializedNotes = JSON.stringify({
       service: 'Virtual Office',
       plan: input.plan,
@@ -153,6 +158,10 @@ export async function submitVirtualOfficeAction(input: VirtualOfficeInput) {
       hearAboutUs: input.hearAboutUs,
       hearAboutUsOther: input.hearAboutUsOther || '',
       tentativeCompletionDate: input.tentativeCompletionDate,
+      agreementStatus: 'Sent',
+      agreementToken: token,
+      agreementTokenExpiresAt: tokenExpiresAt,
+      agreementSentAt: sentAt,
     });
 
     let insertPayload: any = {
@@ -164,7 +173,13 @@ export async function submitVirtualOfficeAction(input: VirtualOfficeInput) {
       service: 'Virtual Office',
       start_date: input.startDate,
       notes: serializedNotes,
-      status: 'pending',
+      status: 'approved',
+      agreement_status: 'Sent',
+      agreement_token: token,
+      agreement_token_expires_at: tokenExpiresAt,
+      agreement_sent_at: sentAt,
+      email_sent_at: sentAt,
+      resend_count: 1,
     };
 
     let { data: insertedData, error: insertError } = await supabase
@@ -173,10 +188,16 @@ export async function submitVirtualOfficeAction(input: VirtualOfficeInput) {
       .select('id')
       .single();
 
-    // Fallback if DB schema cache has not reloaded the new 'service' column yet
-    if (insertError && (insertError.message.includes('service') || insertError.message.includes('schema cache'))) {
-      console.warn('[Action] Retrying Virtual Office insert without explicit service column due to DB schema cache lag...');
+    // Fallback if DB schema cache has not reloaded new columns yet
+    if (insertError) {
+      console.warn('[Action] Retrying Virtual Office insert fallback due to schema cache lag...', insertError.message);
       delete insertPayload.service;
+      delete insertPayload.agreement_status;
+      delete insertPayload.agreement_token;
+      delete insertPayload.agreement_token_expires_at;
+      delete insertPayload.agreement_sent_at;
+      delete insertPayload.email_sent_at;
+      delete insertPayload.resend_count;
       const fallbackResult = await supabase
         .from('onboarding_requests')
         .insert([insertPayload])
@@ -191,8 +212,34 @@ export async function submitVirtualOfficeAction(input: VirtualOfficeInput) {
       return { success: false, error: insertError?.message || 'Error creating application record.' };
     }
 
-    // 3. Create notification for Admin and Staff
-    const notificationMessage = `New Virtual Office application received from **${input.companyName}** (${input.plan} Plan).`;
+    // Provision active client profile immediately
+    try {
+      await supabase.from('clients').insert([
+        {
+          organization_id: organizationId,
+          full_name: input.companyName,
+          email: input.email1,
+          phone: 'N/A',
+          status: 'active',
+          onboarded_at: new Date().toISOString(),
+        },
+      ]);
+    } catch (clientErr) {
+      console.warn('[Action] Client auto-provisioning warning:', clientErr);
+    }
+
+    // 3. Dispatch Agreement Review Email via Resend
+    const { sendAgreementReviewEmail } = await import('@/lib/email/email-service');
+    await sendAgreementReviewEmail({
+      clientEmail: input.email1,
+      clientName: input.companyName,
+      companyName: input.companyName,
+      token,
+      expiresAt: tokenExpiresAt,
+    });
+
+    // 4. Create notification for Admin and Staff
+    const notificationMessage = `New Virtual Office application received from **${input.companyName}** (${input.plan} Plan). Agreement email dispatched.`;
     
     await createNotification(supabase, {
       organizationId,
@@ -205,19 +252,14 @@ export async function submitVirtualOfficeAction(input: VirtualOfficeInput) {
       priority: 'high',
     });
 
-    // 4. Record Activity Log
-    await supabase.from('activity_logs').insert([
-      {
-        organization_id: organizationId,
-        action: 'virtual_office_submitted',
-        details: {
-          requestId: insertedData.id,
-          companyName: input.companyName,
-          plan: input.plan,
-          email: input.email1,
-        },
-      },
-    ]);
+    // 5. Record Activity Logs
+    try {
+      await supabase.from('onboarding_activity_logs').insert([
+        { request_id: insertedData.id, action: 'Application Submitted', details: `Virtual office form submitted for ${input.companyName}` },
+        { request_id: insertedData.id, action: 'Agreement Generated', details: `Generated secure token ${token}` },
+        { request_id: insertedData.id, action: 'Email Sent', details: `Resend agreement review link sent to ${input.email1}` },
+      ]);
+    } catch (err) {}
 
     return { success: true, referenceId: insertedData.id };
   } catch (err: any) {
