@@ -44,14 +44,14 @@ export function VerticalTimeline({
               key={m.id}
               className="relative group"
             >
-              {/* Node Circle with Index Label inside (reversed so 01 is oldest) */}
+              {/* Node Circle with Index Label inside (reversed so 01 is oldest, reduced to 2px grey border) */}
               <div
                 onClick={() => onMilestoneClick(m)}
                 className={cn(
                   "absolute -left-[45px] top-1.5 w-8 h-8 rounded-full border-2 flex items-center justify-center font-serif font-black text-xs transition-all duration-300 shadow-sm cursor-pointer z-10",
                   isSelected
                     ? "border-primary bg-primary text-primary-foreground scale-110 shadow-primary/20 ring-4 ring-primary/20"
-                    : "border-primary bg-card text-foreground hover:text-primary"
+                    : "border-border bg-card text-foreground hover:text-primary"
                 )}
               >
                 {(milestones.length - index).toString().padStart(2, '0')}
@@ -73,12 +73,8 @@ export function VerticalTimeline({
                   </span>
                 </div>
 
-                <h4
-                  className={cn(
-                    "text-sm font-bold leading-snug transition-colors",
-                    isSelected ? "text-primary font-black" : "text-foreground group-hover:text-primary"
-                  )}
-                >
+                {/* Heading in theme orange color by default */}
+                <h4 className="text-sm font-bold leading-snug text-primary transition-colors">
                   {m.heading}
                 </h4>
 

@@ -132,14 +132,14 @@ export function HorizontalTimeline({
                       />
                     )}
 
-                    {/* Node Circle with Outline & Index Label (reversed so 01 is oldest) */}
+                    {/* Node Circle with Outline & Index Label (reversed so 01 is oldest, reduced to 2px grey border) */}
                     <div
                       onClick={() => onMilestoneClick(m)}
                       className={cn(
-                        "relative w-12 h-12 rounded-full border-4 flex items-center justify-center font-serif font-black text-sm z-10 transition-all duration-300 shadow-md cursor-pointer",
+                        "relative w-12 h-12 rounded-full border-2 flex items-center justify-center font-serif font-black text-sm z-10 transition-all duration-300 shadow-md cursor-pointer",
                         isSelected
                           ? "border-primary bg-primary text-primary-foreground scale-110 shadow-primary/20 ring-4 ring-primary/20"
-                          : "border-primary bg-card text-foreground hover:text-primary"
+                          : "border-border bg-card text-foreground hover:text-primary"
                       )}
                     >
                       {(milestones.length - actualIndex).toString().padStart(2, '0')}
@@ -163,18 +163,8 @@ export function HorizontalTimeline({
                         onMilestoneClick(m);
                       }}
                     >
-                      <div className="flex items-center justify-between mb-1 select-none">
-                        <span className="text-[9px] font-bold text-primary/80 uppercase tracking-widest">
-                          Milestone
-                        </span>
-                      </div>
-
-                      <h4
-                        className={cn(
-                          "text-xs font-bold leading-snug transition-colors",
-                          isSelected ? "text-primary font-black" : "text-foreground group-hover:text-primary"
-                        )}
-                      >
+                      {/* Heading in theme orange color by default */}
+                      <h4 className="text-xs font-bold leading-snug text-primary transition-colors">
                         {m.heading}
                       </h4>
 
