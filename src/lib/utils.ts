@@ -10,13 +10,14 @@ export function formatDate(dateStr: string): string {
   const parts = dateStr.split('-');
   if (parts.length !== 3) return dateStr;
   const year = parts[0];
-  const month = parseInt(parts[1], 10) - 1;
+  const monthIdx = parseInt(parts[1], 10) - 1;
   const day = parseInt(parts[2], 10);
-  const date = new Date(Date.UTC(parseInt(year, 10), month, day));
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'UTC'
-  });
+  
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+  
+  const monthName = months[monthIdx] || parts[1];
+  return `${monthName} ${day}, ${year}`;
 }

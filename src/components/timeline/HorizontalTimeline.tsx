@@ -22,12 +22,14 @@ export function HorizontalTimeline({
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [hasDragged, setHasDragged] = useState(false);
+  
+  // Track hovered node index to highlight adjacent line segments
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   // Scroll to the latest milestone (far right end) on mount or milestones change
   useEffect(() => {
     if (milestones.length === 0) return;
     
-    // A small timeout ensures the browser has finished layout calculations
     const scrollTimeout = setTimeout(() => {
       if (containerRef.current) {
         containerRef.current.scrollLeft = containerRef.current.scrollWidth;
@@ -45,7 +47,6 @@ export function HorizontalTimeline({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
     setIsDragging(true);
-    // Track initial click coordinates relative to container offset
     setStartX(e.pageX - containerRef.current.offsetLeft);
     setScrollLeft(containerRef.current.scrollLeft);
     setHasDragged(false);
@@ -63,9 +64,8 @@ export function HorizontalTimeline({
     if (!isDragging || !containerRef.current) return;
     e.preventDefault();
     const x = e.pageX - containerRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5; // Drag speed multiplier
+    const walk = (x - startX) * 1.5;
     
-    // Set dragged flag if movement is larger than a minor wobble threshold
     if (Math.abs(x - startX) > 5) {
       setHasDragged(true);
     }
@@ -74,7 +74,6 @@ export function HorizontalTimeline({
   };
 
   const handleMilestoneClick = (milestone: CompanyTimeline) => {
-    // Only fire event if the user didn't drag the timeline
     if (!hasDragged) {
       onMilestoneClick(milestone);
     }
@@ -108,11 +107,22 @@ export function HorizontalTimeline({
               <div
                 key={m.id}
                 onClick={() => handleMilestoneClick(m)}
-                className="relative flex flex-col items-center w-[220px] text-center z-10 group"
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                className="relative flex flex-col items-center w-[220px] text-center z-10 group cursor-pointer"
               >
                 {/* Connecting Line Segment (starts from center of current node to center of next node) */}
                 {index < milestones.length - 1 && (
-                  <div className="absolute top-6 left-1/2 w-[calc(100%+4rem)] h-1 bg-border -translate-y-1/2 z-0 group-hover:bg-primary transition-colors duration-300" />
+                  <div
+                    className={cn(
+                      "absolute top-6 left-1/2 w-[calc(100%+4rem)] h-1 -translate-y-1/2 z-0 transition-all duration-300",
+                      hoveredIndex === index
+                        ? "bg-gradient-to-r from-primary via-border to-border"
+                        : hoveredIndex === index + 1
+                        ? "bg-gradient-to-r from-border via-border to-primary"
+                        : "bg-border"
+                    )}
+                  />
                 )}
 
                 {/* Node Circle */}
