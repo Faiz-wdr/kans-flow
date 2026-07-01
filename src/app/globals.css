@@ -146,4 +146,10 @@
     accent-color: var(--primary);
     cursor: pointer;
   }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+  }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
 }

@@ -251,3 +251,13 @@ export interface ActivityLog {
   details: Record<string, any> | null;
   createdAt: string;
 }
+
+// 16. Company Timeline
+export interface CompanyTimeline {
+  id: string;
+  date: string; // YYYY-MM-DD
+  heading: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
