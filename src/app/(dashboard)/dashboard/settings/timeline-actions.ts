@@ -29,8 +29,8 @@ export async function fetchTimelineAction(): Promise<{ success: boolean; data?: 
     const { data, error } = await supabase
       .from('company_timeline')
       .select('*')
-      .order('date', { ascending: true })
-      .order('created_at', { ascending: true });
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
 

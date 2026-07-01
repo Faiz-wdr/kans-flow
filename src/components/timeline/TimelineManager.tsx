@@ -11,7 +11,7 @@ import { useDialog } from '@/providers/dialog-provider';
 import { Settings, Plus, Calendar, RotateCw } from 'lucide-react';
 import { HorizontalTimeline } from './HorizontalTimeline';
 import { VerticalTimeline } from './VerticalTimeline';
-import { MilestoneDetailCard } from './MilestoneDetailDrawer';
+
 import { MilestoneModal } from './MilestoneModal';
 import {
   createMilestoneAction,
@@ -239,6 +239,9 @@ export function TimelineManager({ initialMilestones, userRole }: TimelineManager
                     milestones={milestones}
                     selectedMilestoneId={selectedMilestone?.id}
                     onMilestoneClick={setSelectedMilestone}
+                    onEdit={handleEditClick}
+                    onDelete={handleDeleteMilestone}
+                    loading={loading}
                   />
                 </div>
 
@@ -248,24 +251,11 @@ export function TimelineManager({ initialMilestones, userRole }: TimelineManager
                     milestones={milestones}
                     selectedMilestoneId={selectedMilestone?.id}
                     onMilestoneClick={setSelectedMilestone}
+                    onEdit={handleEditClick}
+                    onDelete={handleDeleteMilestone}
+                    loading={loading}
                   />
                 </div>
-
-                {/* Milestone Detail Card - positioned inline below the timelines */}
-                {selectedMilestone && (
-                  <div className="pt-2">
-                    <MilestoneDetailCard
-                      milestone={selectedMilestone}
-                      onClose={() => setSelectedMilestone(null)}
-                      onEdit={(m) => {
-                        setSelectedMilestone(null);
-                        handleEditClick(m);
-                      }}
-                      onDelete={handleDeleteMilestone}
-                      loading={loading}
-                    />
-                  </div>
-                )}
               </div>
             )}
           </div>
