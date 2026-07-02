@@ -29,6 +29,14 @@ export function TimelineManager({ initialMilestones, userRole }: TimelineManager
   const [activeTab, setActiveTab] = useState<'system' | 'timeline'>('system');
   const [milestones, setMilestones] = useState<CompanyTimeline[]>(initialMilestones);
   const [selectedMilestone, setSelectedMilestone] = useState<CompanyTimeline | null>(null);
+
+  const handleMilestoneClick = (milestone: CompanyTimeline | null) => {
+    if (milestone === null) {
+      setSelectedMilestone(null);
+    } else {
+      setSelectedMilestone((prev) => (prev?.id === milestone.id ? null : milestone));
+    }
+  };
   
   // Modal / Drawer open states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -238,7 +246,7 @@ export function TimelineManager({ initialMilestones, userRole }: TimelineManager
                   <HorizontalTimeline
                     milestones={milestones}
                     selectedMilestoneId={selectedMilestone?.id}
-                    onMilestoneClick={setSelectedMilestone}
+                    onMilestoneClick={handleMilestoneClick}
                     onEdit={handleEditClick}
                     onDelete={handleDeleteMilestone}
                     loading={loading}
@@ -250,7 +258,7 @@ export function TimelineManager({ initialMilestones, userRole }: TimelineManager
                   <VerticalTimeline
                     milestones={milestones}
                     selectedMilestoneId={selectedMilestone?.id}
-                    onMilestoneClick={setSelectedMilestone}
+                    onMilestoneClick={handleMilestoneClick}
                     onEdit={handleEditClick}
                     onDelete={handleDeleteMilestone}
                     loading={loading}

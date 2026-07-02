@@ -4,6 +4,7 @@ import { PageContainer } from '@/components/shared/shell/PageContainer';
 import { SectionHeader } from '@/components/shared/shell/SectionHeader';
 import { EmptyState } from '@/components/shared/shell/EmptyState';
 import { LayoutDashboard } from 'lucide-react';
+import { PWAInstallBanner } from '@/components/pwa/PWAInstallBanner';
 
 export default async function DashboardPage() {
   const profile = await serverAuth.getUserProfile();
@@ -19,6 +20,8 @@ export default async function DashboardPage() {
             : `Staff portal for KANs HUB. Active queues for ${profile?.fullName || 'Staff Member'}.`
         }
       />
+
+      <PWAInstallBanner />
 
       {/* Basic Metrics Shell Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

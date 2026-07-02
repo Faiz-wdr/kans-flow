@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 interface HorizontalTimelineProps {
   milestones: CompanyTimeline[];
   selectedMilestoneId?: string;
-  onMilestoneClick: (milestone: CompanyTimeline) => void;
+  onMilestoneClick: (milestone: CompanyTimeline | null) => void;
   onEdit: (milestone: CompanyTimeline) => void;
   onDelete: (id: string) => void;
   loading: boolean;
@@ -46,6 +46,7 @@ export function HorizontalTimeline({
         backgroundImage: 'radial-gradient(circle, var(--border) 1px, transparent 1px)',
         backgroundSize: '16px 16px',
       }}
+      onClick={() => onMilestoneClick(null)}
     >
       {/* Snake grid wrapper */}
       <div className="max-w-4xl mx-auto flex flex-col gap-y-24">
@@ -134,7 +135,10 @@ export function HorizontalTimeline({
 
                     {/* Node Circle with Outline & Index Label (reversed so 01 is oldest, reduced to 2px grey border) */}
                     <div
-                      onClick={() => onMilestoneClick(m)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onMilestoneClick(m);
+                      }}
                       className={cn(
                         "relative w-12 h-12 rounded-full border-2 flex items-center justify-center font-serif font-black text-sm z-10 transition-all duration-300 shadow-md cursor-pointer",
                         isSelected

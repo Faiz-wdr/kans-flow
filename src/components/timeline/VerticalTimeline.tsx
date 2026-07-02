@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 interface VerticalTimelineProps {
   milestones: CompanyTimeline[];
   selectedMilestoneId?: string;
-  onMilestoneClick: (milestone: CompanyTimeline) => void;
+  onMilestoneClick: (milestone: CompanyTimeline | null) => void;
   onEdit: (milestone: CompanyTimeline) => void;
   onDelete: (id: string) => void;
   loading: boolean;
@@ -33,6 +33,7 @@ export function VerticalTimeline({
         backgroundImage: 'radial-gradient(circle, var(--border) 1px, transparent 1px)',
         backgroundSize: '16px 16px',
       }}
+      onClick={() => onMilestoneClick(null)}
     >
       {/* Vertical line running down the timeline */}
       <div className="relative border-l-2 border-muted pl-8 ml-4 space-y-8 py-2">
@@ -46,7 +47,10 @@ export function VerticalTimeline({
             >
               {/* Node Circle with Index Label inside (reversed so 01 is oldest, reduced to 2px grey border) */}
               <div
-                onClick={() => onMilestoneClick(m)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMilestoneClick(m);
+                }}
                 className={cn(
                   "absolute -left-[45px] top-1.5 w-8 h-8 rounded-full border-2 flex items-center justify-center font-serif font-black text-xs transition-all duration-300 shadow-sm cursor-pointer z-10",
                   isSelected
@@ -59,7 +63,10 @@ export function VerticalTimeline({
 
               {/* Card Container: Expands Inline on click */}
               <div
-                onClick={() => onMilestoneClick(m)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMilestoneClick(m);
+                }}
                 className={cn(
                   "p-4 rounded-xl border w-full transition-all duration-300 text-left cursor-pointer z-10",
                   isSelected

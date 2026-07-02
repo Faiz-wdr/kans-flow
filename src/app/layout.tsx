@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Lora } from "next/font/google";
 import { DialogProvider } from "@/providers/dialog-provider";
+import { PWAProvider } from "@/providers/pwa-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -61,7 +62,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${lora.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <DialogProvider>{children}</DialogProvider>
+        <DialogProvider>
+          <PWAProvider>{children}</PWAProvider>
+        </DialogProvider>
       </body>
     </html>
   );

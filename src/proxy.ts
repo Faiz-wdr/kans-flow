@@ -12,7 +12,7 @@ export async function proxy(request: NextRequest) {
   let isProfileValid = false;
   let isProfileSuspended = false;
   
-  if (user) {
+  if (user && (isDashboardRoute || isLoginRoute)) {
     try {
       const { data: profile } = await supabase
         .from('staff_profiles')

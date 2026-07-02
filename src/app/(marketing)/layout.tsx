@@ -30,8 +30,11 @@ export default function MarketingLayout({
             <Link href="/support" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Submit Ticket
             </Link>
-            <Link href="/support?category=vacate" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Vacate Notice
+            <Link href="/virtual-office" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Virtual Office
+            </Link>
+            <Link href="/name-wall" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Name Wall
             </Link>
             <Link
               href="/login"
@@ -78,11 +81,18 @@ export default function MarketingLayout({
               Submit Ticket
             </Link>
             <Link
-              href="/support?category=vacate"
+              href="/virtual-office"
               onClick={() => setMobileMenuOpen(false)}
               className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
             >
-              Vacate Notice
+              Virtual Office
+            </Link>
+            <Link
+              href="/name-wall"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Name Wall
             </Link>
           </div>
         )}
